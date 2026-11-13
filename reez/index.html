@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reez — AI Video Creator & Creative AI Specialist</title>
+<meta name="description" content="Eletu Wareez Irebami (Reez) — AI video creator and video editor transforming creative concepts into compelling visual experiences through AI-powered video production.">
+<meta name="author" content="Eletu Wareez Irebami">
+<meta name="theme-color" content="#0b0b10">
+<style>
+  :root{
+    --bg:#0b0b10; --bg2:#12121a; --panel:#15151f;
+    --purple:#8b5cf6; --purple-soft:#a78bfa; --purple-dim:rgba(139,92,246,.14);
+    --txt:#f4f4f6; --dim:rgba(244,244,246,.60); --faint:rgba(244,244,246,.35);
+    --stroke:rgba(255,255,255,.09); --stroke-soft:rgba(167,139,250,.25);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:'Inter','SF Pro Display',-apple-system,'Segoe UI',sans-serif;
+    line-height:1.6; overflow-x:hidden;
+  }
+  ::selection{background:rgba(139,92,246,.35)}
+
+  .glow{position:fixed;border-radius:50%;filter:blur(110px);pointer-events:none;z-index:0}
+  .g1{width:52vw;height:52vw;top:-22vw;right:-14vw;background:rgba(139,92,246,.16)}
+  .g2{width:40vw;height:40vw;bottom:-16vw;left:-12vw;background:rgba(139,92,246,.10)}
+
+  main{position:relative;z-index:1}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 32px}
+
+  /* ---------- nav ---------- */
+  nav{position:fixed;top:0;left:0;right:0;z-index:10;
+    background:rgba(11,11,16,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-bottom:1px solid var(--stroke)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .brand{font-weight:700;letter-spacing:.5px;font-size:17px;text-decoration:none;color:var(--txt)}
+  .brand em{font-style:normal;color:var(--purple-soft)}
+  nav .links{display:flex;gap:28px}
+  nav .links a{color:var(--dim);text-decoration:none;font-size:14px;transition:color .25s}
+  nav .links a:hover{color:var(--txt)}
+
+  /* ---------- hero ---------- */
+  .hero{min-height:92vh;display:flex;flex-direction:column;justify-content:center;padding:120px 0 80px}
+  .hero .eyebrow{color:var(--purple-soft);font-size:13px;letter-spacing:4px;font-weight:600;margin-bottom:22px}
+  .hero h1{font-size:clamp(40px,6vw,72px);line-height:1.08;font-weight:800;letter-spacing:-1.5px;max-width:820px}
+  .hero h1 span{color:var(--purple-soft)}
+  .hero .sub{color:var(--dim);font-size:19px;max-width:600px;margin:26px 0 42px}
+  .hero .cta-row{display:flex;gap:16px;flex-wrap:wrap}
+  .btn{padding:15px 32px;border-radius:12px;font-weight:600;font-size:15px;text-decoration:none;transition:all .3s ease}
+  .btn.primary{color:#fff;background:linear-gradient(135deg,var(--purple),#6d28d9);box-shadow:0 8px 30px rgba(139,92,246,.25)}
+  .btn.primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(139,92,246,.4)}
+  .btn.ghost{color:var(--txt);border:1px solid var(--stroke)}
+  .btn.ghost:hover{border-color:var(--stroke-soft);background:var(--purple-dim)}
+
+  /* ---------- sections ---------- */
+  section{padding:96px 0;border-top:1px solid var(--stroke)}
+  .label{color:var(--purple-soft);font-size:12px;letter-spacing:4px;font-weight:700;margin-bottom:14px}
+  h2{font-size:clamp(28px,3.6vw,40px);font-weight:800;letter-spacing:-.5px;margin-bottom:44px}
+
+  .about-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:48px;align-items:start}
+  .about-grid p{color:var(--dim);font-size:17px;margin-bottom:18px}
+  .fact-list{background:var(--panel);border:1px solid var(--stroke);border-radius:16px;padding:28px}
+  .fact-list h3{font-size:13px;letter-spacing:2.5px;color:var(--faint);font-weight:700;margin-bottom:18px}
+  .fact{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid var(--stroke);font-size:14px}
+  .fact:last-child{border-bottom:none}
+  .fact .k{color:var(--faint)}
+  .fact .v{text-align:right}
+
+  .skills{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .skill{background:var(--panel);border:1px solid var(--stroke);border-radius:14px;padding:22px 24px;transition:border-color .3s,transform .3s}
+  .skill:hover{border-color:var(--stroke-soft);transform:translateY(-3px)}
+  .skill b{display:block;font-size:15px;margin-bottom:6px}
+  .skill span{color:var(--faint);font-size:13px}
+
+  .xp{background:var(--panel);border:1px solid var(--stroke);border-radius:16px;padding:34px;border-left:3px solid var(--purple)}
+  .xp .role{font-size:20px;font-weight:700}
+  .xp .org{color:var(--purple-soft);font-size:15px;margin:4px 0 18px}
+  .xp ul{list-style:none}
+  .xp li{color:var(--dim);font-size:15px;padding:6px 0 6px 22px;position:relative}
+  .xp li::before{content:'';position:absolute;left:0;top:14px;width:7px;height:7px;border-radius:50%;background:var(--purple)}
+
+  .project{background:var(--panel);border:1px solid var(--stroke);border-radius:16px;padding:34px}
+  .project .tag{display:inline-block;font-size:11px;letter-spacing:2px;font-weight:700;color:var(--purple-soft);
+    background:var(--purple-dim);border:1px solid var(--stroke-soft);border-radius:20px;padding:5px 14px;margin-bottom:18px}
+  .project h3{font-size:22px;margin-bottom:12px}
+  .project p{color:var(--dim);font-size:15px;margin-bottom:16px}
+  .project .stack{display:flex;gap:10px;flex-wrap:wrap}
+  .chip{font-size:12px;color:var(--dim);border:1px solid var(--stroke);border-radius:8px;padding:5px 12px}
+
+  .tools{display:flex;gap:14px;flex-wrap:wrap}
+  .tool{flex:1 1 200px;background:var(--panel);border:1px solid var(--stroke);border-radius:14px;padding:24px;text-align:center;transition:border-color .3s,transform .3s}
+  .tool:hover{border-color:var(--stroke-soft);transform:translateY(-3px)}
+  .tool b{display:block;font-size:16px}
+  .tool span{color:var(--faint);font-size:12.5px}
+
+  .training{background:var(--panel);border:1px solid var(--stroke);border-radius:16px;padding:34px}
+  .training h3{font-size:18px;margin-bottom:6px}
+  .training .org{color:var(--purple-soft);font-size:14px;margin-bottom:18px}
+  .training ul{list-style:none;columns:2;column-gap:40px}
+  .training li{color:var(--dim);font-size:14.5px;padding:5px 0 5px 20px;position:relative;break-inside:avoid}
+  .training li::before{content:'✦';position:absolute;left:0;color:var(--purple);font-size:11px;top:8px}
+
+  .quote{background:var(--panel);border:1px solid var(--stroke-soft);border-radius:16px;padding:44px;position:relative}
+  .quote .mark{font-size:64px;line-height:1;color:var(--purple);opacity:.5;font-family:Georgia,serif}
+  .quote blockquote{font-size:clamp(17px,2.2vw,21px);line-height:1.7;color:var(--txt);margin:10px 0 22px}
+  .quote cite{color:var(--faint);font-style:normal;font-size:14px}
+  .quote cite b{color:var(--purple-soft)}
+
+  .contact{text-align:center}
+  .contact p{color:var(--dim);font-size:17px;max-width:520px;margin:0 auto 36px}
+  .contact .mail{display:inline-block;font-size:clamp(18px,3vw,28px);font-weight:700;color:var(--txt);
+    text-decoration:none;border-bottom:2px solid var(--purple);padding-bottom:6px;transition:color .3s,border-color .3s}
+  .contact .mail:hover{color:var(--purple-soft)}
+
+  footer{border-top:1px solid var(--stroke);padding:36px 0;text-align:center;color:var(--faint);font-size:13.5px}
+
+  .reveal{opacity:0;transform:translateY(34px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.3,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  @media (max-width:860px){
+    .about-grid,.skills{grid-template-columns:1fr}
+    nav .links{display:none}
+    .training ul{columns:1}
+    section{padding:72px 0}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important}
+    .reveal{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="glow g1"></div>
+<div class="glow g2"></div>
+
+<main>
+  <nav>
+    <div class="wrap">
+      <a class="brand" href="#top">Reez<em>.</em></a>
+      <div class="links">
+        <a href="#about">About</a>
+        <a href="#skills">Skills</a>
+        <a href="#work">Work</a>
+        <a href="#feedback">Feedback</a>
+        <a href="#contact">Contact</a>
+      </div>
+      <a class="btn primary" href="#contact" style="padding:10px 22px;font-size:13.5px">Hire Me</a>
+    </div>
+  </nav>
+
+  <header class="hero wrap" id="top">
+    <div class="eyebrow">AI VIDEO CREATOR — CREATIVE AI SPECIALIST</div>
+    <h1>I turn creative ideas into <span>polished visual experiences</span></h1>
+    <p class="sub">Eletu Wareez Irebami — known as Reez. Transforming creative concepts into compelling visual experiences through AI-powered video production, storytelling, and creative workflows.</p>
+    <div class="cta-row">
+      <a class="btn primary" href="#work">See My Work</a>
+      <a class="btn ghost" href="#contact">Get in Touch</a>
+    </div>
+  </header>
+
+  <section id="about">
+    <div class="wrap reveal">
+      <div class="label">ABOUT ME</div>
+      <h2>Detail-oriented, quality-focused creative production</h2>
+      <div class="about-grid">
+        <div>
+          <p>I'm a creative AI video creator and video editor specializing in transforming concepts and creative briefs into polished visual content.</p>
+          <p>My work sits at the intersection of storytelling and AI-assisted production: prompt development, scene planning, and visual consistency from the first frame to the final cut. I interpret instructions carefully, evaluate generated outputs critically, and refine until the content meets the creative requirement.</p>
+          <p>I bring a detail-oriented, adaptable, and quality-focused approach to every creative production and AI-related project.</p>
+        </div>
+        <div class="fact-list">
+          <h3>AT A GLANCE</h3>
+          <div class="fact"><span class="k">Name</span><span class="v">Eletu Wareez Irebami</span></div>
+          <div class="fact"><span class="k">Goes by</span><span class="v">Reez</span></div>
+          <div class="fact"><span class="k">Focus</span><span class="v">AI video production</span></div>
+          <div class="fact"><span class="k">Also strong at</span><span class="v">Prompt engineering</span></div>
+          <div class="fact"><span class="k">Mode</span><span class="v">Freelance & collaboration</span></div>
+          <div class="fact"><span class="k">Contact</span><span class="v">Email</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="skills">
+    <div class="wrap reveal">
+      <div class="label">SKILLS & EXPERTISE</div>
+      <h2>What I bring to a project</h2>
+      <div class="skills">
+        <div class="skill"><b>AI Video Generation</b><span>Concept-to-video production with AI-assisted workflows</span></div>
+        <div class="skill"><b>Video Editing & Post-Production</b><span>Pacing, transitions, and final polish</span></div>
+        <div class="skill"><b>Prompt Engineering</b><span>Prompt development and iterative refinement</span></div>
+        <div class="skill"><b>Visual Storytelling</b><span>Scene planning, continuity, and narrative flow</span></div>
+        <div class="skill"><b>Visual Consistency</b><span>Continuity of style and identity across every scene</span></div>
+        <div class="skill"><b>AI Content Evaluation</b><span>Quality assurance, output review, and error spotting</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="experience">
+    <div class="wrap reveal">
+      <div class="label">PROFESSIONAL EXPERIENCE</div>
+      <h2>Where I've applied it</h2>
+      <div class="xp">
+        <div class="role">AI Video Creator / Video Editor</div>
+        <div class="org">Freelance — Client: Benj Franklin</div>
+        <ul>
+          <li>Created an AI-assisted video based on the client's creative ideas and requirements.</li>
+          <li>Translated the client's concept into coherent visual content using AI video production workflows.</li>
+          <li>Maintained visual consistency and continuity throughout the video.</li>
+          <li>Delivered a high-quality final video that received positive client feedback.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="work">
+    <div class="wrap reveal">
+      <div class="label">FEATURED PROJECT</div>
+      <h2>Selected work</h2>
+      <div class="project">
+        <span class="tag">AI-ASSISTED VIDEO PRODUCTION</span>
+        <h3>Concept-to-Screen for Benj Franklin</h3>
+        <p>Translated a client's creative ideas into polished visual content — an AI-assisted video built around their concept, with emphasis on quality, coherence, and visual consistency from prompt to final edit.</p>
+        <div class="stack">
+          <span class="chip">AI video generation</span>
+          <span class="chip">Prompt development</span>
+          <span class="chip">Video editing</span>
+          <span class="chip">Visual continuity</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tools">
+    <div class="wrap reveal">
+      <div class="label">TOOLS & TECHNOLOGIES</div>
+      <h2>Daily toolkit</h2>
+      <div class="tools">
+        <div class="tool"><b>ChatGPT</b><span>Prompt development & ideation</span></div>
+        <div class="tool"><b>Claude</b><span>Creative workflows & review</span></div>
+        <div class="tool"><b>Gemini</b><span>Multimodal content work</span></div>
+        <div class="tool"><b>NotebookLM</b><span>Research & brief organization</span></div>
+        <div class="tool"><b>AI Video Tools</b><span>Generation & editing pipelines</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="training">
+    <div class="wrap reveal">
+      <div class="label">TRAINING & DEVELOPMENT</div>
+      <h2>Where the craft was built</h2>
+      <div class="training">
+        <h3>AI Video Creation & Video Editing — Training</h3>
+        <div class="org">WEALTH HUB OFFICE community</div>
+        <ul>
+          <li>AI video production practices</li>
+          <li>Video editing techniques</li>
+          <li>Creative prompt development</li>
+          <li>Scene-by-scene video planning</li>
+          <li>Visual consistency & continuity</li>
+          <li>Translating concepts into finished video</li>
+          <li>Reviewing & improving AI-generated outputs</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="feedback">
+    <div class="wrap reveal">
+      <div class="label">CLIENT FEEDBACK</div>
+      <h2>What clients say</h2>
+      <div class="quote">
+        <div class="mark">"</div>
+        <blockquote>This seller really did a good job by bringing my ideas to reality using AI video so I will recommend for anyone who is looking for a good seller like me.</blockquote>
+        <cite>— <b>Benj Franklin</b> · Client, AI-assisted video project</cite>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="contact">
+    <div class="wrap reveal">
+      <div class="label">CONTACT</div>
+      <h2>Let's build something visual</h2>
+      <p>Have a concept, a creative brief, or an idea that needs to move? Email is the fastest way to reach me.</p>
+      <a class="mail" href="mailto:eletuwareezirebami@gmail.com">eletuwareezirebami@gmail.com</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">© 2025 Eletu Wareez Irebami (Reez) — AI Video Creator & Creative AI Specialist</div>
+  </footer>
+</main>
+
+<script>
+  const io = new IntersectionObserver(es=>{
+    es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+  },{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
