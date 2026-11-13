@@ -1,319 +1,297 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Newton — Motion in Three Dimensions</title>
-<style>
-  :root{
-    --bg:#05060f; --bg2:#0a0c1e;
-    --cyan:#00f0ff; --violet:#7c3aed; --magenta:#ff2e9a;
-    --glass:rgba(255,255,255,.06); --stroke:rgba(255,255,255,.14);
-    --txt:#ffffff; --dim:rgba(255,255,255,.62);
-  }
-  *{margin:0;padding:0;box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{
-    background:var(--bg); color:var(--txt);
-    font-family:'Inter','SF Pro Display',-apple-system,'Segoe UI',sans-serif;
-    overflow-x:hidden; perspective:1200px;
-  }
-  ::selection{background:rgba(0,240,255,.35)}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Newton — immersive 3D web experiences built with motion, neon glass, interactive design, and code."
+    />
+    <meta
+      name="keywords"
+      content="3D web design, motion graphics, interactive design, Spline, neon glass, Newton"
+    />
+    <meta name="author" content="Newton Labs" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#05060f" />
 
-  /* ---------- ambient motion background ---------- */
-  .aurora{position:fixed;inset:0;z-index:0;filter:blur(90px);opacity:.55;pointer-events:none}
-  .aurora span{position:absolute;border-radius:50%;mix-blend-mode:screen;animation:drift 22s ease-in-out infinite alternate}
-  .aurora .a1{width:55vw;height:55vw;left:-15vw;top:-18vw;background:radial-gradient(circle,#00f0ff 0%,transparent 65%)}
-  .aurora .a2{width:50vw;height:50vw;right:-12vw;top:-8vw;background:radial-gradient(circle,#7c3aed 0%,transparent 65%);animation-delay:-7s}
-  .aurora .a3{width:45vw;height:45vw;left:25vw;bottom:-20vw;background:radial-gradient(circle,#ff2e9a 0%,transparent 65%);animation-delay:-14s}
-  @keyframes drift{
-    0%{transform:translate3d(0,0,0) scale(1)}
-    50%{transform:translate3d(6vw,-4vh,0) scale(1.15)}
-    100%{transform:translate3d(-5vw,5vh,0) scale(.95)}
-  }
-  .stars{position:fixed;inset:0;z-index:0;pointer-events:none;
-    background-image:
-      radial-gradient(1.5px 1.5px at 12% 22%,#fff 60%,transparent),
-      radial-gradient(1px 1px at 68% 12%,#fff 60%,transparent),
-      radial-gradient(2px 2px at 84% 38%,rgba(255,255,255,.8) 60%,transparent),
-      radial-gradient(1px 1px at 32% 64%,rgba(255,255,255,.7) 60%,transparent),
-      radial-gradient(1.5px 1.5px at 55% 82%,#fff 60%,transparent),
-      radial-gradient(1px 1px at 8% 88%,rgba(255,255,255,.6) 60%,transparent),
-      radial-gradient(1.5px 1.5px at 92% 74%,#fff 60%,transparent);
-    animation:twinkle 5s ease-in-out infinite alternate}
-  @keyframes twinkle{from{opacity:.35}to{opacity:.8}}
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="Newton — Immersive 3D Web Experiences"
+    />
+    <meta
+      property="og:description"
+      content="Discover Newton's cutting-edge 3D web designs combining motion, neon glass, and interactive experiences."
+    />
 
-  /* ---------- grid floor ---------- */
-  .gridfloor{position:fixed;left:-25%;right:-25%;bottom:-12vh;height:55vh;z-index:0;pointer-events:none;
-    background:
-      linear-gradient(rgba(0,240,255,.16) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(0,240,255,.16) 1px,transparent 1px);
-    background-size:64px 64px;
-    transform:perspective(600px) rotateX(62deg);
-    mask-image:linear-gradient(to top,rgba(0,0,0,.9),transparent 85%);
-    -webkit-mask-image:linear-gradient(to top,rgba(0,0,0,.9),transparent 85%);
-    animation:gridmove 3.2s linear infinite}
-  @keyframes gridmove{from{background-position:0 0}to{background-position:0 64px}}
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta
+      property="twitter:title"
+      content="Newton — Immersive 3D Web Experiences"
+    />
+    <meta
+      property="twitter:description"
+      content="Discover Newton's cutting-edge 3D web designs combining motion, neon glass, and interactive experiences."
+    />
 
-  main{position:relative;z-index:2}
+    <title>Newton — Immersive 3D Web Experiences</title>
 
-  /* ---------- nav ---------- */
-  nav{position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:10;
-    display:flex;align-items:center;gap:38px;padding:14px 30px;border-radius:40px;
-    background:rgba(10,12,30,.5);border:1px solid var(--stroke);
-    backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-    box-shadow:0 8px 40px rgba(0,240,255,.08)}
-  nav .logo{font-weight:800;letter-spacing:6px;font-size:15px}
-  nav .logo i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;
-    background:linear-gradient(135deg,var(--cyan),var(--violet));
-    box-shadow:0 0 12px var(--cyan);animation:pulse 2.4s ease-in-out infinite}
-  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.6}}
-  nav a{color:var(--dim);text-decoration:none;font-size:14px;font-weight:500;transition:color .3s,text-shadow .3s}
-  nav a:hover{color:#fff;text-shadow:0 0 18px var(--cyan)}
-  nav .cta{padding:10px 22px;border-radius:24px;color:#05060f;font-weight:600;
-    background:linear-gradient(90deg,var(--cyan),var(--violet));
-    box-shadow:0 0 24px rgba(0,240,255,.45);transition:transform .3s,box-shadow .3s}
-  nav .cta:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 0 44px rgba(0,240,255,.7);color:#05060f}
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  /* ---------- hero ---------- */
-  .hero{min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;align-items:center;
-    max-width:1280px;margin:0 auto;padding:140px 40px 60px;gap:40px}
-  .kicker{display:inline-flex;align-items:center;gap:10px;padding:8px 18px;border-radius:20px;
-    border:1px solid rgba(0,240,255,.35);background:var(--glass);font-size:12px;letter-spacing:2.5px;font-weight:600}
-  .kicker b{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:pulse 2s infinite}
-  h1{font-size:clamp(52px,7vw,96px);line-height:1.02;font-weight:800;margin:26px 0 8px}
-  h1 .grad{display:inline-block;background:linear-gradient(90deg,var(--cyan),var(--violet),var(--magenta));
-    background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
-    animation:shimmer 5s linear infinite;filter:drop-shadow(0 0 26px rgba(0,240,255,.45))}
-  @keyframes shimmer{to{background-position:220% 0}}
-  .hero p{color:var(--dim);font-size:19px;line-height:1.65;max-width:520px;margin:22px 0 38px}
-  .btns{display:flex;gap:18px;flex-wrap:wrap}
-  .btn{padding:17px 36px;border-radius:32px;font-weight:600;font-size:16px;text-decoration:none;
-    transition:transform .35s cubic-bezier(.2,.9,.3,1.4),box-shadow .35s}
-  .btn.primary{color:#05060f;background:linear-gradient(90deg,var(--cyan),var(--violet));
-    box-shadow:0 0 34px rgba(0,240,255,.5);animation:floaty 4s ease-in-out infinite}
-  .btn.primary:hover{transform:translateY(-4px) scale(1.05);box-shadow:0 0 60px rgba(0,240,255,.8)}
-  .btn.ghost{color:#fff;background:var(--glass);border:1px solid var(--stroke);
-    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-  .btn.ghost:hover{transform:translateY(-4px);border-color:rgba(0,240,255,.6);box-shadow:0 0 30px rgba(0,240,255,.25)}
-  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+    <!-- Remix Icon -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
 
-  /* ---------- 3D motion object: rotating neon cube + orbit rings ---------- */
-  .stage{display:flex;justify-content:center;align-items:center;min-height:560px;perspective:1100px}
-  .orbit-wrap{position:relative;width:420px;height:420px;transform-style:preserve-3d;animation:orbit 26s linear infinite}
-  @keyframes orbit{from{transform:rotateX(62deg) rotateZ(0)}to{transform:rotateX(62deg) rotateZ(360deg)}}
-  .ring{position:absolute;inset:0;border-radius:50%;border:2px solid transparent}
-  .ring.r1{border-top-color:var(--cyan);border-right-color:rgba(0,240,255,.15);box-shadow:0 0 30px rgba(0,240,255,.35)}
-  .ring.r2{inset:36px;border-bottom-color:var(--magenta);border-left-color:rgba(255,46,154,.15);animation:spinback 14s linear infinite;box-shadow:0 0 30px rgba(255,46,154,.3)}
-  .ring.r3{inset:72px;border-left-color:var(--violet);border-top-color:rgba(124,58,237,.2);animation:spinback 9s linear infinite reverse;box-shadow:0 0 30px rgba(124,58,237,.4)}
-  @keyframes spinback{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
-  .core{position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;
-    transform-style:preserve-3d;animation:tilt 12s ease-in-out infinite alternate}
-  @keyframes tilt{from{transform:rotateX(-14deg) rotateY(18deg)}to{transform:rotateX(14deg) rotateY(-18deg)}}
-  .core i{position:absolute;inset:0;border-radius:32px;border:1.5px solid rgba(0,240,255,.55);
-    background:linear-gradient(135deg,rgba(0,240,255,.12),rgba(124,58,237,.18));
-    box-shadow:0 0 50px rgba(0,240,255,.35),inset 0 0 34px rgba(124,58,237,.4)}
-  .core i:nth-child(1){transform:rotateY(0deg) translateZ(75px)}
-  .core i:nth-child(2){transform:rotateY(90deg) translateZ(75px)}
-  .core i:nth-child(3){transform:rotateY(180deg) translateZ(75px)}
-  .core i:nth-child(4){transform:rotateY(270deg) translateZ(75px)}
-  .core i:nth-child(5){transform:rotateX(90deg) translateZ(75px)}
-  .core i:nth-child(6){transform:rotateX(-90deg) translateZ(75px)}
-  .halo{position:absolute;left:50%;top:50%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;
-    background:radial-gradient(circle,rgba(0,240,255,.28),transparent 60%);
-    animation:breathe 5s ease-in-out infinite}
-  @keyframes breathe{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.25);opacity:.45}}
-  .chip{position:absolute;padding:12px 18px;border-radius:14px;font-size:13px;font-weight:600;white-space:nowrap;
-    background:rgba(14,17,48,.6);border:1px solid var(--stroke);
-    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-    box-shadow:0 12px 30px rgba(0,0,0,.4);animation:hoverchip 6s ease-in-out infinite}
-  .chip::before{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:10px;
-    background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
-  .chip.c1{top:6%;left:-8%}
-  .chip.c2{bottom:14%;right:-10%;animation-delay:-2s}
-  .chip.c3{bottom:-4%;left:8%;animation-delay:-4s}
-  @keyframes hoverchip{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+    <!-- Custom Styles -->
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Gruppo&display=swap");
+      @import url("https://fonts.googleapis.com/css2?family=Sen:wght@400..800&display=swap");
 
-  /* ---------- marquee ---------- */
-  .marquee{overflow:hidden;border-top:1px solid var(--stroke);border-bottom:1px solid var(--stroke);
-    padding:20px 0;background:rgba(255,255,255,.02);backdrop-filter:blur(8px)}
-  .marquee .track{display:flex;gap:60px;width:max-content;animation:scroll 24s linear infinite}
-  .marquee span{font-size:15px;letter-spacing:4px;font-weight:600;color:rgba(255,255,255,.4);white-space:nowrap}
-  .marquee span b{color:var(--cyan)}
-  @keyframes scroll{to{transform:translateX(-50%)}}
+      :root {
+        --neon-cyan: #00f0ff;
+        --neon-violet: #7c3aed;
+        --neon-magenta: #ff2e9a;
+      }
 
-  /* ---------- features ---------- */
-  .section{max-width:1280px;margin:0 auto;padding:120px 40px}
-  .eyebrow{color:var(--cyan);letter-spacing:5px;font-size:13px;font-weight:700}
-  h2{font-size:clamp(34px,4.5vw,54px);font-weight:800;margin:14px 0 60px}
-  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;perspective:1000px}
-  .card{padding:38px 32px;border-radius:26px;background:rgba(12,15,38,.6);border:1px solid var(--stroke);
-    backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);
-    transform-style:preserve-3d;transition:transform .5s cubic-bezier(.2,.8,.3,1.2),box-shadow .5s,border-color .5s;
-    animation:rise .9s both}
-  .card:hover{transform:rotateX(6deg) rotateY(-6deg) translateY(-10px) scale(1.02);
-    border-color:rgba(0,240,255,.5);box-shadow:0 30px 70px rgba(0,240,255,.18)}
-  .card:nth-child(2){animation-delay:.12s}.card:nth-child(3){animation-delay:.24s}
-  @keyframes rise{from{opacity:0;transform:translateY(46px) rotateX(8deg)}to{opacity:1}}
-  .card .ic{width:62px;height:62px;border-radius:18px;display:grid;place-items:center;font-size:26px;margin-bottom:26px}
-  .card:nth-child(1) .ic{background:rgba(0,240,255,.12);border:1px solid rgba(0,240,255,.5);box-shadow:0 0 24px rgba(0,240,255,.2)}
-  .card:nth-child(2) .ic{background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.55);box-shadow:0 0 24px rgba(124,58,237,.25)}
-  .card:nth-child(3) .ic{background:rgba(255,46,154,.12);border:1px solid rgba(255,46,154,.5);box-shadow:0 0 24px rgba(255,46,154,.2)}
-  .card h3{font-size:22px;margin-bottom:14px}
-  .card p{color:var(--dim);font-size:15px;line-height:1.7}
+      .nav-link {
+        position: relative;
+        text-decoration: none;
+      }
 
-  /* ---------- stats ---------- */
-  .stats{display:flex;gap:80px;flex-wrap:wrap}
-  .stat b{display:block;font-size:52px;font-weight:800;
-    background:linear-gradient(90deg,var(--cyan),var(--magenta));
-    -webkit-background-clip:text;background-clip:text;color:transparent}
-  .stat span{color:var(--dim);font-size:15px}
+      .nav-link::after {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 1px;
+        bottom: -4px;
+        left: 0;
+        background: linear-gradient(
+          90deg,
+          var(--neon-cyan),
+          var(--neon-magenta)
+        );
+        box-shadow: 0 0 8px var(--neon-cyan);
+        transform: scaleX(0);
+        transform-origin: bottom left;
+        transition: transform 0.3s ease-out;
+      }
 
-  /* ---------- cta ---------- */
-  .cta{max-width:1280px;margin:0 auto 120px;padding:0 40px}
-  .cta .panel{text-align:center;padding:90px 40px;border-radius:34px;position:relative;overflow:hidden;
-    background:linear-gradient(120deg,rgba(0,240,255,.1),rgba(124,58,237,.16));
-    border:1.5px solid transparent;
-    background-clip:padding-box}
-  .cta .panel::before{content:'';position:absolute;inset:-2px;border-radius:36px;padding:1.5px;z-index:-1;
-    background:linear-gradient(90deg,var(--cyan),var(--magenta));
-    -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
-    -webkit-mask-composite:xor;mask-composite:exclude;
-    animation:shimmer 6s linear infinite}
-  .cta .panel::after{content:'';position:absolute;width:520px;height:300px;left:50%;top:20%;transform:translateX(-50%);
-    background:radial-gradient(circle,rgba(124,58,237,.4),transparent 65%);filter:blur(70px);animation:breathe 6s infinite}
-  .cta h2{margin-bottom:16px}
-  .cta p{color:var(--dim);margin-bottom:40px}
+      .nav-link:hover::after {
+        transform: scaleX(1);
+      }
 
-  footer{border-top:1px solid var(--stroke);padding:44px 40px;text-align:center;color:rgba(255,255,255,.4);font-size:14px}
-  footer b{letter-spacing:5px;color:rgba(255,255,255,.85)}
+      #mobile-gif {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
 
-  /* ---------- scroll reveal ---------- */
-  .reveal{opacity:0;transform:translateY(50px) scale(.97);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.8,.3,1.1)}
-  .reveal.in{opacity:1;transform:translateY(0) scale(1)}
+      .glass-effect {
+        background: rgba(10, 12, 30, 0.5);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(14px);
+        border-radius: 14px;
+        border: 1px solid rgba(0, 240, 255, 0.22);
+        padding: 20px;
+        box-shadow:
+          0 4px 24px rgba(0, 0, 0, 0.35),
+          0 0 32px rgba(0, 240, 255, 0.08);
+      }
 
-  @media (max-width:960px){
-    .hero{grid-template-columns:1fr;padding-top:130px}
-    .stage{min-height:460px}
-    .orbit-wrap{width:320px;height:320px}
-    .core{width:110px;height:110px;margin:-55px 0 0 -55px}
-    .core i:nth-child(n){transform:rotateY(90deg) translateZ(55px)}
-    .cards{grid-template-columns:1fr}
-    nav a:not(.cta){display:none}
-  }
-  @media (prefers-reduced-motion:reduce){
-    *,*::before,*::after{animation:none!important;transition:none!important}
-    .reveal{opacity:1;transform:none}
-  }
-</style>
-</head>
-<body>
-<div class="aurora"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
-<div class="stars"></div>
-<div class="gridfloor"></div>
+      .neon-text {
+        background: linear-gradient(
+          90deg,
+          var(--neon-cyan),
+          var(--neon-violet),
+          var(--neon-magenta)
+        );
+        background-size: 220% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: neon-shimmer 5s linear infinite;
+        filter: drop-shadow(0 0 22px rgba(0, 240, 255, 0.45));
+      }
 
-<main>
-  <nav>
-    <span class="logo">NEWTON<i></i></span>
-    <a href="#motion">Motion</a>
-    <a href="#features">Engine</a>
-    <a href="#stats">Data</a>
-    <a class="cta" href="#start">Get Started</a>
-  </nav>
+      @keyframes neon-shimmer {
+        to {
+          background-position: 220% 0;
+        }
+      }
 
-  <section class="hero" id="motion">
-    <div>
-      <span class="kicker"><b></b>MOTION ENGINE 3.0 — NOW LIVE</span>
-      <h1>Newton moves<br><span class="grad">in three dimensions</span></h1>
-      <p>A real-time motion-graphic engine for the spatial web. Neon-glass surfaces, physics-driven orbits and cinematic depth — rendered live in your browser.</p>
-      <div class="btns">
-        <a class="btn primary" href="#start">Start Creating</a>
-        <a class="btn ghost" href="#features">Explore the Engine ▸</a>
+      .neon-btn {
+        border: 1px solid rgba(0, 240, 255, 0.55);
+        box-shadow: 0 0 18px rgba(0, 240, 255, 0.18);
+        transition: all 0.3s ease;
+      }
+
+      .neon-btn:hover {
+        background: rgba(0, 240, 255, 0.12);
+        box-shadow: 0 0 34px rgba(0, 240, 255, 0.45);
+        border-color: var(--neon-cyan);
+      }
+
+      .brand-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-left: 8px;
+        background: linear-gradient(135deg, var(--neon-cyan), var(--neon-violet));
+        box-shadow: 0 0 12px var(--neon-cyan);
+        animation: brand-pulse 2.4s ease-in-out infinite;
+      }
+
+      @keyframes brand-pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.5);
+          opacity: 0.6;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-black text-white font-['Gruppo',sans-serif] overflow-hidden">
+    <nav class="absolute top-0 left-0 right-0 z-20">
+      <div
+        class="container mx-auto px-4 md:px-10 py-4 md:py-10 flex justify-between items-center"
+      >
+        <div class="text-2xl font-bold tracking-widest">
+          NEWTON<span class="brand-dot"></span>
+        </div>
+        <div class="hidden md:flex space-x-8 glass-effect">
+          <a href="#" class="nav-link">Home</a>
+          <a href="#" class="nav-link">Engine</a>
+          <a href="#" class="nav-link">Showcase</a>
+          <a href="#" class="nav-link">Resources</a>
+        </div>
+        <button
+          class="hidden md:block neon-btn border rounded-full px-4 py-2 transition"
+        >
+          Let's Talk
+        </button>
+        <button
+          id="menu-toggle"
+          class="md:hidden text-white border border-white/50 rounded-full px-3 py-1 hover:bg-white/10 transition focus:outline-none"
+        >
+          <i class="ri-menu-3-line text-xl"></i>
+        </button>
+      </div>
+    </nav>
+
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 bg-black bg-opacity-90 z-30 hidden flex-col justify-center items-center px-4 md:px-10 glass-effect"
+    >
+      <button
+        id="close-menu"
+        class="absolute top-4 right-4 text-white border border-white/50 rounded-full px-3 py-1 hover:bg-white/10 transition focus:outline-none"
+      >
+        <i class="ri-close-line text-xl"></i>
+      </button>
+      <a
+        href="#"
+        class="text-2xl my-4 hover:text-gray-300 transition-colors duration-300"
+        >Home</a
+      >
+      <a
+        href="#"
+        class="text-2xl my-4 hover:text-gray-300 transition-colors duration-300"
+        >Engine</a
+      >
+      <a
+        href="#"
+        class="text-2xl my-4 hover:text-gray-300 transition-colors duration-300"
+        >Showcase</a
+      >
+      <a
+        href="#"
+        class="text-2xl my-4 hover:text-gray-300 transition-colors duration-300"
+        >Resources</a
+      >
+      <button
+        class="mt-8 neon-btn border rounded-full px-6 py-3 transition text-xl"
+      >
+        Let's Talk
+      </button>
+    </div>
+
+    <div class="relative w-full h-screen">
+      <spline-viewer
+        url="https://prod.spline.design/WNmhHpS4PLU16Rji/scene.splinecode"
+        class="w-full h-full hidden md:block"
+      ></spline-viewer>
+
+      <img
+        id="mobile-gif"
+        src="animation.gif"
+        alt="Animated 3D scene"
+        class="w-full h-full object-cover md:hidden"
+      />
+
+      <div class="absolute inset-0 pointer-events-none">
+        <div
+          class="container mx-auto h-full flex flex-col justify-end px-4 md:px-10 py-4 md:py-10"
+        >
+          <div
+            class="flex flex-col md:flex-row justify-between items-start md:items-end"
+          >
+            <div class="mb-8 md:mb-0 max-w-full md:max-w-[50%] glass-effect">
+              <h1
+                class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-[5rem] font-['Sen',sans-serif] font-normal leading-none tracking-tighter mb-4"
+              >
+                Design Beyond<br /><span class="neon-text">Reality</span>
+              </h1>
+              <p class="text-xs sm:text-sm md:text-base tracking-widest">
+                3D \ MOTION \ NEON GLASS \ INTERACTIVE \ DESIGN \ CODE
+              </p>
+            </div>
+
+            <div class="w-full md:w-auto md:text-left glass-effect">
+              <p
+                class="text-sm sm:text-base md:text-lg lg:text-xl mb-4 md:mb-8"
+              >
+                Crafting Immersive Worlds and Neon-Glass
+                <br class="hidden md:inline" />
+                Interfaces to Make Your Brand Stand Out
+              </p>
+              <div
+                class="flex flex-col sm:flex-row md:flex-col lg:flex-row space-y-2 sm:space-y-0 sm:space-x-4 md:space-x-0 md:space-y-2 lg:space-y-0 lg:space-x-4 md:items-end"
+              >
+                <button
+                  class="pointer-events-auto neon-btn text-xs sm:text-sm md:text-base border rounded-full px-3 py-1 md:px-4 md:py-2 transition w-full sm:w-auto"
+                >
+                  Learn More
+                </button>
+                <button
+                  class="pointer-events-auto neon-btn text-xs sm:text-sm md:text-base border rounded-full px-3 py-1 md:px-4 md:py-2 transition w-full sm:w-auto"
+                >
+                  Contact Us
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="stage">
-      <div class="orbit-wrap">
-        <div class="halo"></div>
-        <div class="ring r1"></div>
-        <div class="ring r2"></div>
-        <div class="ring r3"></div>
-        <div class="core"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <span class="chip c1">Realtime Render · 120fps</span>
-        <span class="chip c2">Neural Mesh 98%</span>
-        <span class="chip c3">Gravity Engine v3</span>
-      </div>
-    </div>
-  </section>
 
-  <div class="marquee">
-    <div class="track">
-      <span>SPATIAL UI <b>◆</b> REAL-TIME 3D <b>◆</b> NEON GLASS <b>◆</b> PHYSICS MOTION <b>◆</b> WEBGPU <b>◆</b> SHADER FX <b>◆</b>&nbsp;</span>
-      <span>SPATIAL UI <b>◆</b> REAL-TIME 3D <b>◆</b> NEON GLASS <b>◆</b> PHYSICS MOTION <b>◆</b> WEBGPU <b>◆</b> SHADER FX <b>◆</b>&nbsp;</span>
-    </div>
-  </div>
-
-  <section class="section" id="features">
-    <div class="reveal">
-      <span class="eyebrow">CAPABILITIES</span>
-      <h2>Motion is the interface</h2>
-    </div>
-    <div class="cards">
-      <div class="card reveal">
-        <div class="ic">◈</div>
-        <h3>Volumetric Engine</h3>
-        <p>Sculpt light, depth and physics on a real-time 3D canvas. Every surface refracts, glows and responds at a locked 120fps.</p>
-      </div>
-      <div class="card reveal">
-        <div class="ic">⬡</div>
-        <h3>Neon Glass Kit</h3>
-        <p>A complete motion design system of frosted, luminous components — tuned for dark spatial interfaces and kinetic typography.</p>
-      </div>
-      <div class="card reveal">
-        <div class="ic">✦</div>
-        <h3>AI Choreography</h3>
-        <p>Describe a scene and Newton orchestrates cameras, easing curves and particle systems into cinematic motion — automatically.</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="stats" style="padding-top:0">
-    <div class="stats reveal">
-      <div class="stat"><b>120K+</b><span>Creators in motion</span></div>
-      <div class="stat"><b>4.2M</b><span>Scenes rendered / month</span></div>
-      <div class="stat"><b>99.99%</b><span>Uptime · 40 regions</span></div>
-    </div>
-  </section>
-
-  <section class="cta" id="start">
-    <div class="panel reveal">
-      <h2>Put your brand in motion</h2>
-      <p>Join 120,000+ designers shipping immersive, animated products with Newton.</p>
-      <a class="btn primary" href="#" style="display:inline-block">Create Free Account</a>
-    </div>
-  </section>
-</main>
-
-<footer><b>NEWTON</b><br><br>© 2025 Newton Labs — Motion in neon glass.</footer>
-
-<script>
-  const io = new IntersectionObserver(es=>{
-    es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
-  },{threshold:.15});
-  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-
-  const stage=document.querySelector('.stage');
-  if(stage && matchMedia('(pointer:fine)').matches){
-    const wrap=document.querySelector('.orbit-wrap');
-    stage.addEventListener('mousemove',e=>{
-      const r=stage.getBoundingClientRect();
-      const x=(e.clientX-r.left)/r.width-.5, y=(e.clientY-r.top)/r.height-.5;
-      wrap.style.animationPlayState='paused';
-      wrap.style.transform=`rotateX(${62+y*-18}deg) rotateZ(${x*24}deg)`;
-    });
-    stage.addEventListener('mouseleave',()=>{
-      wrap.style.transform='';wrap.style.animationPlayState='running';
-    });
-  }
-</script>
-</body>
+    <script
+      type="module"
+      src="https://unpkg.com/@splinetool/viewer@1.7.6/build/spline-viewer.js"
+    ></script>
+    <script src="script.js"></script>
+  </body>
 </html>
