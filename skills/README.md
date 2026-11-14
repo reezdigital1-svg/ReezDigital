@@ -21,6 +21,7 @@ Or copy any skill folder into your agent's skills directory.
 | [`static-site-audit`](static-site-audit/) | Pre-flight checklist for static sites: structure, leftovers, meta, a11y, performance, mobile |
 | [`profile-to-content`](profile-to-content/) | Resume → portfolio website + first week of authentic social content, with a strict no-invention policy |
 | [`skill-security-review`](skill-security-review/) | Security-review third-party agent skills before you trust them with your machine |
+| [`prove-your-work`](prove-your-work/) | Force independent verification before claiming success — real checks, evidence, and an honest "not verified" list |
 
 ## Principles
 
