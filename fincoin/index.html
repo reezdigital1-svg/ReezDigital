@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="FinCoin — money in motion. Instant global payments, smart vaults and staking on a next-generation digital finance network."
+    />
+    <meta name="theme-color" content="#06070f" />
+    <title>FinCoin — Money in Motion</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400..800&family=Space+Grotesk:wght@300..700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+
+    <style>
+      :root {
+        --gold: #f5c542;
+        --gold-deep: #c8931a;
+        --cyan: #00f0ff;
+        --violet: #7c3aed;
+        --magenta: #ff2e9a;
+        --bg: #06070f;
+      }
+
+      * { -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; box-sizing: border-box; }
+
+      html { scroll-behavior: smooth; }
+
+      body {
+        background: var(--bg);
+        color: #fff;
+        font-family: "Space Grotesk", sans-serif;
+        overflow-x: hidden;
+      }
+
+      ::selection { background: var(--gold); color: #06070f; }
+
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: #07081a; }
+      ::-webkit-scrollbar-thumb {
+        background: linear-gradient(var(--gold), var(--gold-deep));
+        border-radius: 8px;
+      }
+
+      .font-display { font-family: "Syne", sans-serif; }
+
+      /* ---------- atmosphere ---------- */
+      .bg-scene {
+        position: fixed; inset: 0; z-index: -2;
+        background:
+          radial-gradient(ellipse 75% 50% at 75% -5%, rgba(245, 197, 66, 0.12), transparent 60%),
+          radial-gradient(ellipse 60% 45% at 10% 10%, rgba(124, 58, 237, 0.16), transparent 60%),
+          radial-gradient(ellipse 70% 50% at 50% 115%, rgba(0, 240, 255, 0.1), transparent 60%),
+          var(--bg);
+      }
+      .bg-grid {
+        position: fixed; inset: 0; z-index: -1; pointer-events: none;
+        background-image:
+          linear-gradient(rgba(245, 197, 66, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(245, 197, 66, 0.05) 1px, transparent 1px);
+        background-size: 72px 72px;
+        mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, black 25%, transparent 75%);
+        -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, black 25%, transparent 75%);
+      }
+      .noise {
+        position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: 0.05;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
+
+      /* ---------- preloader ---------- */
+      #preloader {
+        position: fixed; inset: 0; z-index: 100; background: var(--bg);
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+        transition: opacity 0.7s ease, visibility 0.7s;
+      }
+      #preloader.done { opacity: 0; visibility: hidden; }
+      .pre-logo {
+        font-family: "Syne", sans-serif; font-weight: 800;
+        font-size: clamp(2.2rem, 7vw, 4.2rem); letter-spacing: 0.24em;
+        background: linear-gradient(90deg, var(--gold), #fff3c4, var(--gold));
+        background-size: 250% 100%;
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        animation: shimmer 2.2s linear infinite;
+      }
+      .pre-bar {
+        width: min(260px, 60vw); height: 2px; border-radius: 2px; overflow: hidden;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .pre-bar i {
+        display: block; height: 100%; width: 0%;
+        background: linear-gradient(90deg, var(--gold), var(--cyan));
+        box-shadow: 0 0 14px var(--gold);
+        transition: width 0.15s ease;
+      }
+      .pre-count { font-size: 0.8rem; letter-spacing: 0.4em; color: rgba(255,255,255,0.55); }
+
+      @keyframes shimmer { to { background-position: 250% 0; } }
+
+      /* ---------- progress + cursor ---------- */
+      #progress {
+        position: fixed; top: 0; left: 0; height: 2px; width: 0%; z-index: 70;
+        background: linear-gradient(90deg, var(--gold), var(--cyan), var(--magenta));
+        box-shadow: 0 0 12px rgba(245, 197, 66, 0.7);
+      }
+      .cursor-dot, .cursor-ring {
+        position: fixed; top: 0; left: 0; z-index: 90; pointer-events: none;
+        border-radius: 50%; transform: translate(-50%, -50%); display: none;
+      }
+      @media (pointer: fine) { .cursor-dot, .cursor-ring { display: block; } }
+      .cursor-dot { width: 6px; height: 6px; background: var(--gold); box-shadow: 0 0 12px var(--gold); }
+      .cursor-ring {
+        width: 34px; height: 34px; border: 1px solid rgba(245, 197, 66, 0.5);
+        transition: width 0.25s, height 0.25s, border-color 0.25s, background 0.25s;
+      }
+      .cursor-ring.hovering { width: 56px; height: 56px; border-color: var(--cyan); background: rgba(0, 240, 255, 0.08); }
+
+      /* ---------- nav ---------- */
+      .nav-shell { transition: background 0.4s, border-color 0.4s; border-bottom: 1px solid transparent; }
+      .nav-shell.scrolled {
+        background: rgba(6, 7, 15, 0.72);
+        backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+        border-bottom-color: rgba(245, 197, 66, 0.22);
+      }
+      .nav-link {
+        position: relative; text-decoration: none; font-size: 0.82rem;
+        letter-spacing: 0.22em; text-transform: uppercase;
+        color: rgba(255,255,255,0.72); transition: color 0.3s;
+      }
+      .nav-link:hover { color: #fff; }
+      .nav-link::after {
+        content: ""; position: absolute; left: 0; bottom: -6px; width: 100%; height: 1px;
+        background: linear-gradient(90deg, var(--gold), var(--cyan));
+        box-shadow: 0 0 10px var(--gold);
+        transform: scaleX(0); transform-origin: left;
+        transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .nav-link:hover::after { transform: scaleX(1); }
+
+      /* ---------- buttons ---------- */
+      .btn-gold {
+        display: inline-flex; align-items: center; gap: 10px;
+        padding: 15px 32px; border-radius: 999px; border: none; cursor: pointer;
+        font-size: 0.85rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+        color: #06070f; text-decoration: none;
+        background: linear-gradient(135deg, #ffe08a, var(--gold) 45%, var(--gold-deep));
+        box-shadow: 0 0 30px rgba(245, 197, 66, 0.35), 0 10px 34px rgba(0,0,0,0.45);
+        transition: transform 0.3s, box-shadow 0.3s;
+      }
+      .btn-gold:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 48px rgba(245, 197, 66, 0.55), 0 14px 44px rgba(0,0,0,0.5);
+      }
+      .btn-ghost {
+        display: inline-flex; align-items: center; gap: 10px;
+        padding: 15px 32px; border-radius: 999px; cursor: pointer;
+        font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase;
+        color: #fff; text-decoration: none;
+        background: rgba(255,255,255,0.03); border: 1px solid rgba(245, 197, 66, 0.4);
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        transition: all 0.3s;
+      }
+      .btn-ghost:hover {
+        background: rgba(245, 197, 66, 0.1); border-color: var(--gold);
+        box-shadow: 0 0 30px rgba(245, 197, 66, 0.3); transform: translateY(-2px);
+      }
+
+      /* ---------- hero ---------- */
+      .hero-title {
+        font-family: "Syne", sans-serif; font-weight: 800;
+        font-size: clamp(2.7rem, 7.5vw, 6.4rem);
+        line-height: 0.98; letter-spacing: -0.02em; text-transform: uppercase;
+      }
+      .gold-text {
+        background: linear-gradient(100deg, #fff3c4, var(--gold) 40%, var(--gold-deep) 75%, #fff3c4);
+        background-size: 250% 100%;
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        animation: shimmer 6s linear infinite;
+        filter: drop-shadow(0 0 26px rgba(245, 197, 66, 0.35));
+      }
+      .hero-chip {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 8px 16px; border-radius: 999px;
+        font-size: 0.7rem; letter-spacing: 0.26em; text-transform: uppercase;
+        color: rgba(255,255,255,0.85);
+        background: rgba(12, 14, 32, 0.55);
+        border: 1px solid rgba(245, 197, 66, 0.3);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      }
+      #coin-canvas { width: 100%; height: 100%; display: block; }
+      .coin-halo {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        width: 70%; aspect-ratio: 1; border-radius: 50%;
+        background: radial-gradient(circle, rgba(245, 197, 66, 0.18), transparent 62%);
+        filter: blur(30px); pointer-events: none;
+      }
+      .ticker {
+        display: flex; gap: 2.5rem; overflow: hidden; padding: 14px 0;
+        border-top: 1px solid rgba(245, 197, 66, 0.18);
+        border-bottom: 1px solid rgba(245, 197, 66, 0.18);
+        background: rgba(10, 12, 28, 0.5);
+      }
+      .ticker ul {
+        display: flex; gap: 2.5rem; flex-shrink: 0; min-width: 100%;
+        list-style: none; animation: scroll-x 24s linear infinite;
+        align-items: center;
+      }
+      @keyframes scroll-x { to { transform: translateX(calc(-100% - 2.5rem)); } }
+      .ticker li {
+        display: flex; align-items: center; gap: 0.6rem; white-space: nowrap;
+        font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase;
+        color: rgba(255,255,255,0.75);
+      }
+      .ticker li b { color: var(--gold); font-weight: 700; }
+      .ticker li i { font-size: 0.8rem; color: var(--cyan); }
+
+      /* ---------- sections ---------- */
+      section { position: relative; }
+      .tag {
+        display: inline-flex; align-items: center; gap: 10px;
+        font-size: 0.72rem; letter-spacing: 0.4em; text-transform: uppercase; color: var(--gold);
+      }
+      .tag::before {
+        content: ""; width: 34px; height: 1px;
+        background: linear-gradient(90deg, var(--gold), transparent);
+      }
+      .section-title {
+        font-family: "Syne", sans-serif; font-weight: 800;
+        font-size: clamp(2rem, 5.5vw, 3.9rem); line-height: 1.05;
+        text-transform: uppercase; letter-spacing: -0.01em;
+      }
+
+      /* ---------- glass cards ---------- */
+      .bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+      @media (max-width: 900px) { .bento { grid-template-columns: 1fr 1fr; } }
+      @media (max-width: 620px) { .bento { grid-template-columns: 1fr; } }
+      .glass-card {
+        position: relative; overflow: hidden; padding: 30px; border-radius: 22px;
+        background: linear-gradient(160deg, rgba(22, 24, 50, 0.6), rgba(10, 12, 28, 0.35));
+        border: 1px solid rgba(245, 197, 66, 0.18);
+        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s, box-shadow 0.35s;
+      }
+      .glass-card:hover {
+        border-color: rgba(245, 197, 66, 0.55);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 44px rgba(245, 197, 66, 0.1);
+        transform: translateY(-6px);
+      }
+      .glass-card::before {
+        content: ""; position: absolute; inset: 0; opacity: 0; transition: opacity 0.35s; pointer-events: none;
+        background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(245, 197, 66, 0.1), transparent 45%);
+      }
+      .glass-card:hover::before { opacity: 1; }
+      .card-icon {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 52px; height: 52px; border-radius: 15px; margin-bottom: 20px;
+        font-size: 1.45rem; color: var(--gold);
+        background: rgba(245, 197, 66, 0.08);
+        border: 1px solid rgba(245, 197, 66, 0.3);
+        box-shadow: 0 0 22px rgba(245, 197, 66, 0.12);
+      }
+      .glass-card h3 { font-family: "Syne", sans-serif; font-weight: 700; font-size: 1.2rem; margin-bottom: 10px; }
+      .glass-card p { font-size: 0.92rem; line-height: 1.65; color: rgba(255,255,255,0.6); }
+
+      /* ---------- steps ---------- */
+      .step-num {
+        font-family: "Syne", sans-serif; font-weight: 800;
+        font-size: clamp(3rem, 7vw, 5rem); line-height: 1;
+        color: transparent; -webkit-text-stroke: 1.5px rgba(245, 197, 66, 0.55);
+      }
+
+      /* ---------- stats ---------- */
+      .stat-num {
+        font-family: "Syne", sans-serif; font-weight: 800;
+        font-size: clamp(2.4rem, 5.5vw, 4.2rem); line-height: 1;
+        background: linear-gradient(180deg, #fff3c4, var(--gold));
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      .stat-label {
+        margin-top: 10px; font-size: 0.72rem; letter-spacing: 0.32em;
+        text-transform: uppercase; color: rgba(255,255,255,0.5);
+      }
+
+      /* ---------- CTA ---------- */
+      .cta-glow {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        width: min(640px, 90vw); aspect-ratio: 1; border-radius: 50%;
+        background: conic-gradient(from 0deg, rgba(245, 197, 66, 0.16), rgba(124, 58, 237, 0.2), rgba(0, 240, 255, 0.14), rgba(245, 197, 66, 0.16));
+        filter: blur(60px); animation: spin 18s linear infinite; pointer-events: none;
+      }
+      @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+      /* ---------- footer ---------- */
+      .footer-giant {
+        font-family: "Syne", sans-serif; font-weight: 800;
+        font-size: clamp(3.2rem, 14vw, 12rem); line-height: 0.9;
+        text-transform: uppercase; letter-spacing: 0.02em; text-align: center;
+        color: transparent; -webkit-text-stroke: 1px rgba(245, 197, 66, 0.35);
+        user-select: none;
+      }
+      .footer-link {
+        color: rgba(255,255,255,0.6); text-decoration: none;
+        font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase;
+        transition: color 0.3s, text-shadow 0.3s;
+      }
+      .footer-link:hover { color: var(--gold); text-shadow: 0 0 16px rgba(245, 197, 66, 0.6); }
+      .social-dot {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 42px; height: 42px; border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.18);
+        color: rgba(255,255,255,0.7); font-size: 1.05rem; text-decoration: none;
+        transition: all 0.3s;
+      }
+      .social-dot:hover {
+        color: #06070f; background: var(--gold); border-color: var(--gold);
+        box-shadow: 0 0 24px rgba(245, 197, 66, 0.55); transform: translateY(-3px);
+      }
+
+      /* ---------- reveal ---------- */
+      .reveal { opacity: 0; transform: translateY(38px); transition: opacity 0.9s cubic-bezier(0.22,1,0.36,1), transform 0.9s cubic-bezier(0.22,1,0.36,1); }
+      .reveal.visible { opacity: 1; transform: translateY(0); }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.001s !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001s !important;
+        }
+        html { scroll-behavior: auto; }
+        .reveal { opacity: 1; transform: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-scene"></div>
+    <div class="bg-grid"></div>
+    <div class="noise"></div>
+
+    <div id="preloader">
+      <div class="pre-logo">FINCOIN</div>
+      <div class="pre-bar"><i id="pre-fill"></i></div>
+      <div class="pre-count" id="pre-count">0%</div>
+    </div>
+
+    <div id="progress"></div>
+    <div class="cursor-dot" id="cursor-dot"></div>
+    <div class="cursor-ring" id="cursor-ring"></div>
+
+    <nav class="fixed top-0 left-0 right-0 z-50 nav-shell" id="nav">
+      <div class="max-w-7xl mx-auto px-5 md:px-10 py-5 flex justify-between items-center">
+        <a href="#hero" class="font-display font-extrabold text-xl tracking-[0.22em]">
+          FIN<span class="gold-text">COIN</span>
+        </a>
+        <div class="hidden md:flex items-center gap-10">
+          <a href="#features" class="nav-link">Features</a>
+          <a href="#how" class="nav-link">How It Works</a>
+          <a href="#stats" class="nav-link">Network</a>
+          <a href="/" class="nav-link">Newton</a>
+        </div>
+        <a href="#cta" class="hidden md:inline-flex btn-gold !py-2.5 !px-6 !text-[0.72rem]">Get Started</a>
+        <button
+          id="menu-toggle"
+          class="md:hidden text-white border border-white/30 rounded-full px-3.5 py-1.5 hover:bg-white/10 transition focus:outline-none"
+        >
+          <i class="ri-menu-3-line text-xl"></i>
+        </button>
+      </div>
+    </nav>
+
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 z-[80] hidden flex-col justify-center items-center gap-2 px-6"
+      style="background: rgba(6, 7, 15, 0.94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);"
+    >
+      <button
+        id="close-menu"
+        class="absolute top-5 right-5 text-white border border-white/30 rounded-full px-3.5 py-1.5 hover:bg-white/10 transition focus:outline-none"
+      >
+        <i class="ri-close-line text-xl"></i>
+      </button>
+      <a href="#features" class="font-display text-3xl font-bold py-3">Features</a>
+      <a href="#how" class="font-display text-3xl font-bold py-3">How It Works</a>
+      <a href="#stats" class="font-display text-3xl font-bold py-3">Network</a>
+      <a href="/" class="font-display text-3xl font-bold py-3">Newton</a>
+      <a href="#cta" class="mt-6 btn-gold">Get Started</a>
+    </div>
+
+    <!-- ============ HERO ============ -->
+    <section id="hero" class="relative min-h-screen flex flex-col">
+      <div class="max-w-7xl mx-auto px-5 md:px-10 w-full flex-1 grid lg:grid-cols-2 gap-10 items-center pt-32 pb-16">
+        <div>
+          <div class="hero-chip mb-7">
+            <i class="ri-coins-fill" style="color: var(--gold)"></i>
+            Next-Generation Digital Finance
+          </div>
+          <h1 class="hero-title">
+            Money<br />in <span class="gold-text">Motion</span>
+          </h1>
+          <p class="mt-7 max-w-md text-white/60 text-base md:text-lg leading-relaxed">
+            FinCoin moves value the way the internet moves information — instantly, globally, and without gatekeepers.
+          </p>
+          <div class="mt-9 flex flex-wrap gap-4">
+            <a href="#cta" class="btn-gold"><i class="ri-wallet-3-fill"></i> Get Started</a>
+            <a href="#how" class="btn-ghost">How It Works</a>
+          </div>
+          <div class="mt-10 flex items-center gap-6 text-xs tracking-[0.2em] uppercase text-white/40">
+            <span><i class="ri-shield-check-line" style="color: var(--gold)"></i> Audited contracts</span>
+            <span><i class="ri-flashlight-line" style="color: var(--gold)"></i> 1-second finality</span>
+          </div>
+        </div>
+
+        <div class="relative h-[380px] md:h-[520px]">
+          <div class="coin-halo"></div>
+          <canvas id="coin-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="ticker" aria-hidden="true">
+        <ul>
+          <li><i class="ri-bit-coin-fill"></i> FNC <b>$1.24</b></li>
+          <li><i class="ri-arrow-up-line" style="color: #4ade80"></i> +4.2% today</li>
+          <li><i class="ri-global-line"></i> 140+ countries</li>
+          <li><i class="ri-exchange-line"></i> 12,400 TPS</li>
+          <li><i class="ri-lock-2-fill"></i> $890M staked</li>
+          <li><i class="ri-time-line"></i> Settlement <b>0.9s</b></li>
+        </ul>
+        <ul>
+          <li><i class="ri-bit-coin-fill"></i> FNC <b>$1.24</b></li>
+          <li><i class="ri-arrow-up-line" style="color: #4ade80"></i> +4.2% today</li>
+          <li><i class="ri-global-line"></i> 140+ countries</li>
+          <li><i class="ri-exchange-line"></i> 12,400 TPS</li>
+          <li><i class="ri-lock-2-fill"></i> $890M staked</li>
+          <li><i class="ri-time-line"></i> Settlement <b>0.9s</b></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ FEATURES ============ -->
+    <section id="features" class="py-24 md:py-32">
+      <div class="max-w-7xl mx-auto px-5 md:px-10">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16 reveal">
+          <div>
+            <div class="tag mb-5">Features</div>
+            <h2 class="section-title">Built for the<br /><span class="gold-text">speed of now</span></h2>
+          </div>
+          <p class="max-w-sm text-white/55 text-sm leading-relaxed">
+            A financial network designed like the web — open, programmable, and fast by default.
+          </p>
+        </div>
+
+        <div class="bento">
+          <div class="glass-card reveal">
+            <div class="card-icon"><i class="ri-flashlight-fill"></i></div>
+            <h3>Instant Settlement</h3>
+            <p>Transactions finalize in under a second, anywhere on Earth. No pending windows, no banking hours.</p>
+          </div>
+          <div class="glass-card reveal">
+            <div class="card-icon"><i class="ri-vip-crown-2-fill"></i></div>
+            <h3>Smart Vaults</h3>
+            <p>Programmable savings with yield strategies you control — set rules once, let the vault work.</p>
+          </div>
+          <div class="glass-card reveal">
+            <div class="card-icon"><i class="ri-global-fill"></i></div>
+            <h3>Borderless by Default</h3>
+            <p>Send value to 140+ countries with the same one-second finality and a fee measured in fractions of a cent.</p>
+          </div>
+          <div class="glass-card reveal">
+            <div class="card-icon"><i class="ri-hand-coin-fill"></i></div>
+            <h3>Staking Rewards</h3>
+            <p>Secure the network and earn rewards on your holdings — flexible terms, no lock-in surprises.</p>
+          </div>
+          <div class="glass-card reveal">
+            <div class="card-icon"><i class="ri-code-s-slash-line"></i></div>
+            <h3>Developer First</h3>
+            <p>Clean APIs, SDKs in every major language, and docs that respect your time. Ship in an afternoon.</p>
+          </div>
+          <div class="glass-card reveal">
+            <div class="card-icon"><i class="ri-shield-star-fill"></i></div>
+            <h3>Bank-Grade Security</h3>
+            <p>Independently audited smart contracts, multi-sig treasuries, and continuous threat monitoring.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HOW ============ -->
+    <section id="how" class="py-24 md:py-32">
+      <div class="max-w-7xl mx-auto px-5 md:px-10">
+        <div class="mb-16 reveal">
+          <div class="tag mb-5">How It Works</div>
+          <h2 class="section-title">Three steps to<br /><span class="gold-text">moving money</span></h2>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-10">
+          <div class="reveal">
+            <div class="step-num mb-5">01</div>
+            <h3 class="font-display font-bold text-xl mb-3">Create your wallet</h3>
+            <p class="text-white/60 text-sm leading-relaxed">
+              One tap, no paperwork. Your wallet is your account — keys stay on your device, where they belong.
+            </p>
+          </div>
+          <div class="reveal">
+            <div class="step-num mb-5">02</div>
+            <h3 class="font-display font-bold text-xl mb-3">Fund in any currency</h3>
+            <p class="text-white/60 text-sm leading-relaxed">
+              Add funds by card, bank transfer, or transfer existing crypto. Conversion happens at live rates.
+            </p>
+          </div>
+          <div class="reveal">
+            <div class="step-num mb-5">03</div>
+            <h3 class="font-display font-bold text-xl mb-3">Send, spend, stake</h3>
+            <p class="text-white/60 text-sm leading-relaxed">
+              Pay anyone on the planet in under a second — or put your coins to work in a smart vault.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ STATS ============ -->
+    <section id="stats" class="py-24 md:py-28">
+      <div class="max-w-6xl mx-auto px-5 md:px-10">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-y-14 gap-x-6 text-center reveal">
+          <div>
+            <div class="stat-num"><span class="count" data-target="140">0</span>+</div>
+            <div class="stat-label">Countries</div>
+          </div>
+          <div>
+            <div class="stat-num"><span class="count" data-target="12400">0</span></div>
+            <div class="stat-label">Transactions / sec</div>
+          </div>
+          <div>
+            <div class="stat-num">$<span class="count" data-target="890">0</span>M</div>
+            <div class="stat-label">Total Staked</div>
+          </div>
+          <div>
+            <div class="stat-num"><span class="count" data-target="99">0</span>.99%</div>
+            <div class="stat-label">Network Uptime</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CTA ============ -->
+    <section id="cta" class="py-32 md:py-44 overflow-hidden">
+      <div class="relative max-w-4xl mx-auto px-5 text-center reveal">
+        <div class="cta-glow"></div>
+        <div class="relative py-16">
+          <div class="tag mb-8" style="justify-content: center; width: 100%;">Join the Network</div>
+          <h2 class="section-title mb-6">Your money,<br /><span class="gold-text">unlocked</span></h2>
+          <p class="max-w-md mx-auto text-white/60 mb-10 leading-relaxed">
+            Join millions moving value at the speed of the internet. Your first transfer takes less than a minute.
+          </p>
+          <div class="flex flex-wrap justify-center gap-4">
+            <a href="#" class="btn-gold"><i class="ri-download-2-fill"></i> Download Wallet</a>
+            <a href="#" class="btn-ghost">Read the Docs</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="pt-16 pb-10 border-t border-yellow-500/15">
+      <div class="max-w-7xl mx-auto px-5 md:px-10">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-8 mb-14">
+          <div class="flex flex-wrap justify-center gap-6 md:gap-10">
+            <a href="#features" class="footer-link">Features</a>
+            <a href="#how" class="footer-link">How It Works</a>
+            <a href="#stats" class="footer-link">Network</a>
+            <a href="/" class="footer-link">Newton</a>
+            <a href="/dimension/" class="footer-link">Studio</a>
+          </div>
+          <div class="flex gap-4">
+            <a href="#" class="social-dot" aria-label="X"><i class="ri-twitter-x-fill"></i></a>
+            <a href="#" class="social-dot" aria-label="Telegram"><i class="ri-telegram-fill"></i></a>
+            <a href="#" class="social-dot" aria-label="Discord"><i class="ri-discord-fill"></i></a>
+            <a href="#" class="social-dot" aria-label="GitHub"><i class="ri-github-fill"></i></a>
+          </div>
+        </div>
+        <div class="footer-giant">FINCOIN</div>
+        <div class="mt-10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs tracking-[0.2em] uppercase text-white/35">
+          <span>&copy; 2025 FinCoin Labs — Money in Motion</span>
+          <span>Demo site — not financial advice</span>
+        </div>
+      </div>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
