@@ -164,7 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
       g.font = "700 240px 'Syne', sans-serif";
       g.textAlign = "center";
       g.textBaseline = "middle";
-      g.fillText("F", 256, 268);
+      g.fillText("N", 256, 268);
 
       const tex = new THREE.CanvasTexture(c);
       tex.anisotropy = 8;
