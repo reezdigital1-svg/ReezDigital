@@ -29,6 +29,7 @@ Or copy any skill folder into your agent's skills directory.
 | [`every-screen-one-cut`](every-screen-one-cut/) | Export one edit to every platform format correctly — specs, safe areas, loudness, and probe-verified delivery |
 | [`free-footage-hunter`](free-footage-hunter/) | Source license-safe stock video, music, and SFX — direct-URL patterns, download discipline, recorded licenses |
 | [`text-stylist`](text-stylist/) | Style every text overlay like a pro — verified 18-font library, brand palettes, pairing rules, and ffmpeg drawtext recipes |
+| [`agent-roundtable`](agent-roundtable/) | Make agents figure things out together — a four-seat debate protocol with claim tagging, recorded dissent, and a ruled decision |
 
 ## Principles
 
