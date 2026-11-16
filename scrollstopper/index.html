@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>HookForge — forge hook lines that stop the scroll</title>
+<title>ScrollStopper | forge hook lines that stop the scroll</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2305060F'/%3E%3Ctext x='16' y='22' font-size='17' font-weight='800' text-anchor='middle' fill='%2300F0FF'%3EH%3C/text%3E%3C/svg%3E">
 <meta name="description" content="Free API that forges scored hook lines for LinkedIn, X, TikTok, YouTube and blogs. Built for agents and creators. No keys, no signup.">
 <style>
   :root { color-scheme: dark; }
@@ -32,6 +33,8 @@
   @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
   button.cta { margin-top: 22px; background: linear-gradient(92deg, #00F0FF, #7C3AED); color: #05060F; border: 0; font-weight: 800; font-size: 1.02rem; padding: 15px 34px; border-radius: 12px; cursor: pointer; transition: transform .15s, filter .2s; }
   button.cta:hover { transform: translateY(-2px); filter: brightness(1.12); }
+  button.cta.reroll { background: transparent; color: #00F0FF; border: 1px solid #1B2036; margin-left: 10px; }
+  button.cta.reroll:hover { border-color: #00F0FF; }
   .hook { display: flex; gap: 16px; align-items: baseline; padding: 14px 0; border-bottom: 1px solid #161A2E; animation: rise .5s ease both; }
   .hook:last-child { border-bottom: 0; }
   .score { font-weight: 800; color: #00F0FF; min-width: 38px; font-size: 1.05rem; }
@@ -48,6 +51,11 @@
   .sec-title { font-size: 1.6rem; letter-spacing: -0.01em; margin-bottom: 24px; }
   footer { color: #4A5370; font-size: .85rem; padding: 40px 0 60px; text-align: center; }
   .err { color: #FF2E9A; margin-top: 12px; }
+  .desc { margin-top: 18px; background: #05060F; border: 1px solid #232842; border-radius: 12px; padding: 18px; font-size: .92rem; color: #B9C4D4; line-height: 1.6; white-space: pre-wrap; }
+  .desc .tags { color: #00F0FF; display: block; margin-top: 10px; }
+  .desc-label { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; }
+  .copybtn { background: transparent; border: 1px solid #1B2036; color: #00F0FF; border-radius: 8px; padding: 6px 14px; font-size: .8rem; cursor: pointer; }
+  .copybtn:hover { border-color: #00F0FF; }
   .spin { display: inline-block; width: 18px; height: 18px; border: 2px solid #00F0FF; border-top-color: transparent; border-radius: 50%; animation: s 1s linear infinite; vertical-align: -4px; margin-right: 8px; }
   @keyframes s { to { transform: rotate(360deg); } }
 </style>
@@ -89,9 +97,20 @@
           </select>
         </div>
       </div>
+      <label>Your email</label>
+      <input id="email" type="email" placeholder="you@studio.com" autocomplete="email">
+      <p style="color:#4A5370;font-size:.78rem;margin-top:8px">We save your email to send you new hook patterns. No spam, unsubscribe anytime.</p>
       <button class="cta" onclick="go()">Forge hooks</button>
+      <button class="cta reroll" onclick="go(1)" title="Reroll with a new seed">Reroll</button>
       <div id="out" class="result"></div>
       <div id="err" class="err"></div>
+      <div id="descwrap" style="display:none">
+        <div class="desc-label">
+          <label style="margin:0">Post description</label>
+          <button class="copybtn" onclick="copyDesc()">Copy</button>
+        </div>
+        <div id="desc" class="desc"></div>
+      </div>
     </div>
   </section>
 
@@ -112,7 +131,7 @@ GET /api/hooks?topic=seo&amp;platform=tiktok
   </section>
 
   <section id="why">
-    <h2 class="sec-title">Why HookForge <span style="color:#00F0FF">wins</span></h2>
+    <h2 class="sec-title">Why ScrollStopper <span style="color:#00F0FF">wins</span></h2>
     <div class="grid3">
       <div class="feat"><b>8 patterns, one engine</b><span>Stat Slam, Contrarian, Mistake Callout, Open Question, Insider Reveal, List Promise, Time Tension, Result Tease.</span></div>
       <div class="feat"><b>Honest scoring</b><span>Every hook gets a 10 to 99 score with the reason attached. Clickbait is penalized, concrete numbers are rewarded.</span></div>
@@ -120,14 +139,20 @@ GET /api/hooks?topic=seo&amp;platform=tiktok
     </div>
   </section>
 
-  <footer>HookForge · Built by Nico AI Studio · Founder Irebami Wareez (Dan)</footer>
+  <footer>ScrollStopper · Built by Nico AI Studio · Founder Irebami Wareez (Dan)</footer>
 </div>
 
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 const canvas = document.getElementById("bg");
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+let renderer = null;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+} catch (e) {
+  canvas.style.display = "none";
+}
+if (renderer) {
+renderer.setPixelRatio(Math.min(devicePixelRatio, matchMedia("(max-width: 720px)").matches ? 1.5 : 2));
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x05060F, 0.055);
 const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 100);
@@ -157,8 +182,8 @@ const ring = new THREE.Mesh(
 ring.position.copy(knot.position); ring.rotation.x = 1.2;
 scene.add(ring);
 
-// particles
-const N = 900, pos = new Float32Array(N*3);
+// particles (fewer on phones)
+const N = matchMedia("(max-width: 720px)").matches ? 320 : 900, pos = new Float32Array(N*3);
 for (let i = 0; i < N; i++) { pos[i*3] = (Math.random()-0.5)*24; pos[i*3+1] = (Math.random()-0.5)*14; pos[i*3+2] = (Math.random()-0.5)*12 - 2; }
 const pgeo = new THREE.BufferGeometry();
 pgeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
@@ -185,26 +210,63 @@ function tick(t) {
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
+}
 </script>
 
 <script>
-async function go() {
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function track(event, extra) {
+  try {
+    fetch("/api/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(Object.assign({ event }, extra || {}))
+    });
+  } catch (e) { /* telemetry must never break the page */ }
+}
+track("page_view");
+let rerollSeed = 0;
+let lastDescription = "";
+async function go(reroll) {
   const out = document.getElementById("out");
   const err = document.getElementById("err");
+  const email = document.getElementById("email").value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    err.textContent = "Enter your email first, then forge your hooks.";
+    document.getElementById("email").focus();
+    return;
+  }
+  const topic = document.getElementById("topic").value;
+  const platform = document.getElementById("platform").value;
   out.innerHTML = ""; err.textContent = "";
+  if (reroll) rerollSeed++; else track("lead", { email, topic, platform });
+  track(reroll ? "reroll" : "generate", { topic, platform });
   out.innerHTML = '<span class="spin"></span>Forging...';
   try {
     const r = await fetch("/api/hooks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic: document.getElementById("topic").value, platform: document.getElementById("platform").value })
+      body: JSON.stringify({ topic, platform, seed: rerollSeed })
     });
     const d = await r.json();
     if (!r.ok) { out.innerHTML = ""; err.textContent = d.error || "Request failed"; return; }
     out.innerHTML = d.hooks.map((h, i) =>
-      `<div class="hook" style="animation-delay:${i*60}ms"><span class="score">${h.score}</span><span>${h.text}<span class="pattern">${h.pattern} · ${h.why}</span></span></div>`
+      `<div class="hook" style="animation-delay:${i*60}ms"><span class="score">${esc(h.score)}</span><span>${esc(h.text)}<span class="pattern">${esc(h.pattern)} · ${esc(h.why)}</span></span></div>`
     ).join("");
+    if (d.description) {
+      lastDescription = d.description.text + "\n\n" + d.description.hashtags.join(" ");
+      document.getElementById("desc").textContent = lastDescription;
+      document.getElementById("descwrap").style.display = "block";
+    }
   } catch (e) { out.innerHTML = ""; err.textContent = "Network error: " + e.message; }
+}
+function copyDesc() {
+  if (lastDescription && navigator.clipboard) {
+    navigator.clipboard.writeText(lastDescription);
+    track("copy_description");
+  }
 }
 </script>
 </body>

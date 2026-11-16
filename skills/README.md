@@ -30,6 +30,7 @@ Or copy any skill folder into your agent's skills directory.
 | [`free-footage-hunter`](free-footage-hunter/) | Source license-safe stock video, music, and SFX — direct-URL patterns, download discipline, recorded licenses |
 | [`text-stylist`](text-stylist/) | Style every text overlay like a pro — verified 18-font library, brand palettes, pairing rules, and ffmpeg drawtext recipes |
 | [`agent-roundtable`](agent-roundtable/) | Make agents figure things out together — a four-seat debate protocol with claim tagging, recorded dissent, and a ruled decision |
+| [`scrollstopper`](scrollstopper/) | Forge scored hook lines for posts and videos — calls the free ScrollStopper API, eight proven patterns, honest 10 to 99 scoring |
 
 ## Principles
 
