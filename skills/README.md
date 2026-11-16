@@ -24,6 +24,7 @@ Or copy any skill folder into your agent's skills directory.
 | [`prove-your-work`](prove-your-work/) | Force independent verification before claiming success — real checks, evidence, and an honest "not verified" list |
 | [`one-prompt-one-studio`](one-prompt-one-studio/) | Turn one brief into a complete motion production — research, script, video, voiceover, and score as one pipeline |
 | [`launch-mode-everything`](launch-mode-everything/) | Execute any prompt as a full product launch — positioning, professional build, verified proof, and a rollout plan |
+| [`kill-switch-first`](kill-switch-first/) | Stop agents from burning money — hard budgets, pre-flight cost checks, and circuit breakers built before the first call |
 
 ## Principles
 
