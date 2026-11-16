@@ -25,6 +25,9 @@ Or copy any skill folder into your agent's skills directory.
 | [`one-prompt-one-studio`](one-prompt-one-studio/) | Turn one brief into a complete motion production — research, script, video, voiceover, and score as one pipeline |
 | [`launch-mode-everything`](launch-mode-everything/) | Execute any prompt as a full product launch — positioning, professional build, verified proof, and a rollout plan |
 | [`kill-switch-first`](kill-switch-first/) | Stop agents from burning money — hard budgets, pre-flight cost checks, and circuit breakers built before the first call |
+| [`last-frame-sells`](last-frame-sells/) | Build branded end cards that convert — one card, one action, three seconds, platform safe areas respected |
+| [`every-screen-one-cut`](every-screen-one-cut/) | Export one edit to every platform format correctly — specs, safe areas, loudness, and probe-verified delivery |
+| [`free-footage-hunter`](free-footage-hunter/) | Source license-safe stock video, music, and SFX — direct-URL patterns, download discipline, recorded licenses |
 
 ## Principles
 
