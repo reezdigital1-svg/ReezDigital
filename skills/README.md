@@ -22,6 +22,8 @@ Or copy any skill folder into your agent's skills directory.
 | [`profile-to-content`](profile-to-content/) | Resume → portfolio website + first week of authentic social content, with a strict no-invention policy |
 | [`skill-security-review`](skill-security-review/) | Security-review third-party agent skills before you trust them with your machine |
 | [`prove-your-work`](prove-your-work/) | Force independent verification before claiming success — real checks, evidence, and an honest "not verified" list |
+| [`one-prompt-one-studio`](one-prompt-one-studio/) | Turn one brief into a complete motion production — research, script, video, voiceover, and score as one pipeline |
+| [`launch-mode-everything`](launch-mode-everything/) | Execute any prompt as a full product launch — positioning, professional build, verified proof, and a rollout plan |
 
 ## Principles
 
