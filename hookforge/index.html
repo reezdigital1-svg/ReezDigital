@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HookForge — forge hook lines that stop the scroll</title>
+<meta name="description" content="Free API that forges scored hook lines for LinkedIn, X, TikTok, YouTube and blogs. Built for agents and creators. No keys, no signup.">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: #05060F; color: #fff; font-family: system-ui, sans-serif; overflow-x: hidden; }
+  #bg { position: fixed; inset: 0; z-index: 0; }
+  .wrap { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 24px; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 28px 0; }
+  .logo { font-weight: 800; font-size: 1.2rem; letter-spacing: .04em; }
+  .logo b { color: #00F0FF; }
+  nav a { color: #B9C4D4; text-decoration: none; margin-left: 24px; font-size: .95rem; }
+  nav a:hover { color: #00F0FF; }
+  .hero { padding: 90px 0 60px; text-align: center; }
+  .hero h1 { font-size: clamp(2.6rem, 8vw, 5rem); line-height: 1.02; letter-spacing: -0.03em; }
+  .hero h1 .grad { background: linear-gradient(92deg, #00F0FF 0%, #7C3AED 55%, #FF2E9A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { color: #B9C4D4; font-size: 1.15rem; max-width: 640px; margin: 22px auto 0; }
+  .pill { display: inline-flex; gap: 8px; align-items: center; border: 1px solid #1B2036; background: rgba(11,13,26,.7); border-radius: 999px; padding: 8px 18px; font-size: .85rem; color: #B9C4D4; margin-bottom: 28px; }
+  .pill i { width: 8px; height: 8px; border-radius: 50%; background: #00F0FF; box-shadow: 0 0 12px #00F0FF; }
+  .glass { background: rgba(11,13,26,.72); border: 1px solid #1B2036; border-radius: 20px; padding: 32px; backdrop-filter: blur(14px); margin-bottom: 28px; }
+  .glass h2 { font-size: 1.25rem; color: #00F0FF; margin-bottom: 18px; letter-spacing: .02em; }
+  label { display: block; font-size: .74rem; color: #B9C4D4; margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .1em; }
+  input, select { width: 100%; background: #05060F; border: 1px solid #232842; color: #fff; border-radius: 12px; padding: 13px 16px; font-size: 1rem; outline: none; transition: border .2s; }
+  input:focus, select:focus { border-color: #00F0FF; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+  button.cta { margin-top: 22px; background: linear-gradient(92deg, #00F0FF, #7C3AED); color: #05060F; border: 0; font-weight: 800; font-size: 1.02rem; padding: 15px 34px; border-radius: 12px; cursor: pointer; transition: transform .15s, filter .2s; }
+  button.cta:hover { transform: translateY(-2px); filter: brightness(1.12); }
+  .hook { display: flex; gap: 16px; align-items: baseline; padding: 14px 0; border-bottom: 1px solid #161A2E; animation: rise .5s ease both; }
+  .hook:last-child { border-bottom: 0; }
+  .score { font-weight: 800; color: #00F0FF; min-width: 38px; font-size: 1.05rem; }
+  .hook .pattern { color: #B9C4D4; font-size: .78rem; display: block; margin-top: 3px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  pre { background: #05060F; border: 1px solid #232842; border-radius: 12px; padding: 18px; overflow-x: auto; font-size: .82rem; color: #B9C4D4; line-height: 1.5; }
+  code, .kw { color: #00F0FF; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 720px) { .grid3 { grid-template-columns: 1fr; } }
+  .feat { background: rgba(11,13,26,.72); border: 1px solid #1B2036; border-radius: 16px; padding: 22px; }
+  .feat b { color: #00F0FF; display: block; margin-bottom: 8px; }
+  .feat span { color: #B9C4D4; font-size: .92rem; line-height: 1.5; }
+  section { padding: 40px 0; }
+  .sec-title { font-size: 1.6rem; letter-spacing: -0.01em; margin-bottom: 24px; }
+  footer { color: #4A5370; font-size: .85rem; padding: 40px 0 60px; text-align: center; }
+  .err { color: #FF2E9A; margin-top: 12px; }
+  .spin { display: inline-block; width: 18px; height: 18px; border: 2px solid #00F0FF; border-top-color: transparent; border-radius: 50%; animation: s 1s linear infinite; vertical-align: -4px; margin-right: 8px; }
+  @keyframes s { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="wrap">
+  <header>
+    <div class="logo">HOOK<b>FORGE</b></div>
+    <nav>
+      <a href="#forge">Forge</a>
+      <a href="#api">API</a>
+      <a href="#why">Why</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <div class="pill"><i></i>Free &amp; open · No API keys · Built for agents</div>
+    <h1>Forge hooks that<br><span class="grad">stop the scroll.</span></h1>
+    <p>Eight proven hook patterns, scored 10 to 99 against platform length, concrete numbers, and tension words. One POST request. Made for creators and the agents who write for them.</p>
+  </div>
+
+  <section id="forge">
+    <div class="glass">
+      <h2>The Forge</h2>
+      <div class="row">
+        <div>
+          <label>Topic</label>
+          <input id="topic" placeholder="seo" value="seo">
+        </div>
+        <div>
+          <label>Platform</label>
+          <select id="platform">
+            <option value="linkedin">LinkedIn</option>
+            <option value="twitter">X / Twitter</option>
+            <option value="tiktok">TikTok</option>
+            <option value="youtube">YouTube</option>
+            <option value="blog">Blog</option>
+          </select>
+        </div>
+      </div>
+      <button class="cta" onclick="go()">Forge hooks</button>
+      <div id="out" class="result"></div>
+      <div id="err" class="err"></div>
+    </div>
+  </section>
+
+  <section id="api">
+    <h2 class="sec-title">One endpoint. <span style="color:#00F0FF">Any agent.</span></h2>
+<pre>POST /api/hooks
+Content-Type: application/json
+
+{
+  "topic": "seo",
+  "platform": "linkedin",
+  "count": 8
+}
+
+GET /api/hooks?topic=seo&amp;platform=tiktok
+
+→ { "hooks": [ { "text", "pattern", "score", "why" } ] }</pre>
+  </section>
+
+  <section id="why">
+    <h2 class="sec-title">Why HookForge <span style="color:#00F0FF">wins</span></h2>
+    <div class="grid3">
+      <div class="feat"><b>8 patterns, one engine</b><span>Stat Slam, Contrarian, Mistake Callout, Open Question, Insider Reveal, List Promise, Time Tension, Result Tease.</span></div>
+      <div class="feat"><b>Honest scoring</b><span>Every hook gets a 10 to 99 score with the reason attached. Clickbait is penalized, concrete numbers are rewarded.</span></div>
+      <div class="feat"><b>Zero friction</b><span>No keys, no signup, no billing. A free tool agents can call from any environment with HTTP.</span></div>
+    </div>
+  </section>
+
+  <footer>HookForge · Built by Nico AI Studio · Founder Irebami Wareez (Dan)</footer>
+</div>
+
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+const canvas = document.getElementById("bg");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x05060F, 0.055);
+const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0, 0, 7);
+
+// iridescent forge ring
+const env = new THREE.PMREMGenerator(renderer);
+const envCanvas = document.createElement("canvas"); envCanvas.width = 64; envCanvas.height = 64;
+const ectx = envCanvas.getContext("2d");
+const g = ectx.createLinearGradient(0, 0, 64, 64);
+g.addColorStop(0, "#00F0FF"); g.addColorStop(0.5, "#7C3AED"); g.addColorStop(1, "#FF2E9A");
+ectx.fillStyle = g; ectx.fillRect(0, 0, 64, 64);
+ectx.fillStyle = "rgba(255,255,255,0.9)"; ectx.fillRect(8, 8, 10, 10); ectx.fillRect(44, 40, 8, 8);
+const envMap = env.fromEquirectangular(new THREE.CanvasTexture(envCanvas)).texture;
+
+const knot = new THREE.Mesh(
+  new THREE.TorusKnotGeometry(1.5, 0.42, 220, 36),
+  new THREE.MeshPhysicalMaterial({ color: 0x0a0a14, metalness: 1, roughness: 0.18, iridescence: 1, iridescenceIOR: 1.6, iridescenceThicknessRange: [120, 780], envMap, envMapIntensity: 1.4 })
+);
+knot.position.set(3.2, 0.4, -2);
+scene.add(knot);
+
+const ring = new THREE.Mesh(
+  new THREE.TorusGeometry(2.6, 0.05, 16, 120),
+  new THREE.MeshBasicMaterial({ color: 0x00F0FF, transparent: true, opacity: 0.35 })
+);
+ring.position.copy(knot.position); ring.rotation.x = 1.2;
+scene.add(ring);
+
+// particles
+const N = 900, pos = new Float32Array(N*3);
+for (let i = 0; i < N; i++) { pos[i*3] = (Math.random()-0.5)*24; pos[i*3+1] = (Math.random()-0.5)*14; pos[i*3+2] = (Math.random()-0.5)*12 - 2; }
+const pgeo = new THREE.BufferGeometry();
+pgeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+const stars = new THREE.Points(pgeo, new THREE.PointsMaterial({ color: 0x8fb8ff, size: 0.035, transparent: true, opacity: 0.7 }));
+scene.add(stars);
+
+let mx = 0, my = 0;
+addEventListener("pointermove", (e) => { mx = (e.clientX/innerWidth - 0.5)*2; my = (e.clientY/innerHeight - 0.5)*2; });
+addEventListener("resize", () => { camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+renderer.setSize(innerWidth, innerHeight);
+
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function tick(t) {
+  if (!reduced) {
+    knot.rotation.x = t*0.00016 + my*0.25;
+    knot.rotation.y = t*0.00023 + mx*0.35;
+    ring.rotation.z = t*0.0001;
+    camera.position.x += (mx*0.5 - camera.position.x)*0.03;
+    camera.position.y += (-my*0.35 - camera.position.y)*0.03;
+    camera.lookAt(0, 0, 0);
+    stars.rotation.y = t*0.00002;
+  }
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+
+<script>
+async function go() {
+  const out = document.getElementById("out");
+  const err = document.getElementById("err");
+  out.innerHTML = ""; err.textContent = "";
+  out.innerHTML = '<span class="spin"></span>Forging...';
+  try {
+    const r = await fetch("/api/hooks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic: document.getElementById("topic").value, platform: document.getElementById("platform").value })
+    });
+    const d = await r.json();
+    if (!r.ok) { out.innerHTML = ""; err.textContent = d.error || "Request failed"; return; }
+    out.innerHTML = d.hooks.map((h, i) =>
+      `<div class="hook" style="animation-delay:${i*60}ms"><span class="score">${h.score}</span><span>${h.text}<span class="pattern">${h.pattern} · ${h.why}</span></span></div>`
+    ).join("");
+  } catch (e) { out.innerHTML = ""; err.textContent = "Network error: " + e.message; }
+}
+</script>
+</body>
+</html>
