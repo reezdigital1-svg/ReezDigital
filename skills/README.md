@@ -31,6 +31,10 @@ Or copy any skill folder into your agent's skills directory.
 | [`text-stylist`](text-stylist/) | Style every text overlay like a pro — verified 18-font library, brand palettes, pairing rules, and ffmpeg drawtext recipes |
 | [`agent-roundtable`](agent-roundtable/) | Make agents figure things out together — a four-seat debate protocol with claim tagging, recorded dissent, and a ruled decision |
 | [`scrollstopper`](scrollstopper/) | Forge scored hook lines for posts and videos — calls the free ScrollStopper API, eight proven patterns, honest 10 to 99 scoring |
+| [`kill-the-smell`](kill-the-smell/) | De-AI any text with evidence — every smell pattern counted, rewrite proven to preserve meaning with a fact ledger |
+| [`cold-open`](cold-open/) | Website URL in, finished narrated MP4 out — research, script, voiceover, render, sound design, and a verified download link |
+| [`receipts-or-it-didnt-happen`](receipts-or-it-didnt-happen/) | End every agent task with proof — verification ladders per artifact type, receipts block, and a mandatory not-verified list |
+| [`frames-from-nothing`](frames-from-nothing/) | Studio-grade motion graphics from pure code — software 3D engine, extruded typography, synthesized sound, zero external dependencies |
 
 ## Principles
 
