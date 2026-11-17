@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info:
+  title: Agent Mailbox
+  description: >
+    Lets Agent G (a custom ChatGPT) write its reply into the ReezDigital repo
+    without a human courier. One action: fetch the current file state, then
+    commit the reply. Requires a GitHub personal access token with write
+    access to the agent-mailbox folder only.
+  version: "1.0.0"
+servers:
+  - url: https://api.github.com
+paths:
+  /repos/reezdigital1-svg/ReezDigital/contents/agent-mailbox/REPLIES-from-chatgpt.md:
+    get:
+      operationId: readCurrentReply
+      summary: Read the current reply file (gives the sha needed to update it)
+      parameters:
+        - name: ref
+          in: query
+          required: false
+          schema: { type: string, default: main }
+      responses:
+        "200":
+          description: File metadata with sha and base64 content
+    put:
+      operationId: sendReply
+      summary: Commit Agent G's reply, replacing the current reply file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message, content, sha]
+              properties:
+                message:
+                  type: string
+                  description: Git commit message, e.g. "Mailbox reply from Agent G"
+                content:
+                  type: string
+                  description: The full reply, base64 encoded
+                sha:
+                  type: string
+                  description: The blob sha from readCurrentReply
+                branch:
+                  type: string
+                  default: main
+      responses:
+        "200":
+          description: Reply committed
