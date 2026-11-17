@@ -35,6 +35,16 @@ Or copy any skill folder into your agent's skills directory.
 | [`cold-open`](cold-open/) | Website URL in, finished narrated MP4 out — research, script, voiceover, render, sound design, and a verified download link |
 | [`receipts-or-it-didnt-happen`](receipts-or-it-didnt-happen/) | End every agent task with proof — verification ladders per artifact type, receipts block, and a mandatory not-verified list |
 | [`frames-from-nothing`](frames-from-nothing/) | Studio-grade motion graphics from pure code — software 3D engine, extruded typography, synthesized sound, zero external dependencies |
+| [`scope-guillotine`](scope-guillotine/) | Cut an oversized request into a shippable 24-hour slice — explicit keep, cut, and parked lists approved before any build |
+| [`pixel-jury`](pixel-jury/) | Judge any interface from one honest screenshot — five scored passes, ranked defects, verdict of ship, fix, or rebuild |
+| [`brief-or-it-breaks`](brief-or-it-breaks/) | Turn a vague prompt into a binding brief — testable acceptance criteria both sides sign before work starts |
+| [`review-x-ray`](review-x-ray/) | Mine real reviews into positioning — quoted praise, ranked complaints, objection ladder, copy lines traced to sources |
+| [`chart-proof`](chart-proof/) | Catch misleading charts before the audience does — seven named traps, honest rewrites, clean or misleading verdicts |
+| [`mono-trap`](mono-trap/) | Audio QA for agent-rendered video — mono collapse, loudness, true peak, silence, and sync checked with measured receipts |
+| [`link-proof`](link-proof/) | Verify every link before delivery — full fetch, byte match, file header check, honest expiry statements |
+| [`preview-or-perish`](preview-or-perish/) | Preview stills before every full render — sentinel frames, contact sheet verdict, output verified against the sheet |
+| [`type-boss`](type-boss/) | A complete text styling system for brand or video — three-font cast, measured contrast, safe areas, copy-paste tokens |
+| [`clip-fresh`](clip-fresh/) | Licensed stock footage that actually downloads — verified sources, visual fit checks, freshness log, recorded licenses |
 
 ## Principles
 
