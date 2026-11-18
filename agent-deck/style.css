@@ -157,4 +157,10 @@ label{font-size:13px}
 .doc-progress{font-size:13px;color:var(--muted);margin-top:10px;font-variant-numeric:tabular-nums}
 .doc-progress b{color:var(--text)}
 
+/* memory vault */
+.vault-row{display:flex;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.vault-row:last-child{border-bottom:0}
+.vault-row .btn{font-size:12px;padding:6px 10px}
+.vault-row .muted{font-size:12px}
+
 .foot{margin-top:calc(var(--sp)*3);color:var(--muted);font-size:12.5px;line-height:1.7;padding:0 calc(var(--sp)*2)}

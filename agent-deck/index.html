@@ -32,6 +32,7 @@
   <button class="tab" data-tab="send" aria-pressed="false">Send</button>
   <button class="tab" data-tab="doctor" aria-pressed="false">Doctor</button>
   <button class="tab" data-tab="voice" aria-pressed="false">Voice</button>
+  <button class="tab" data-tab="memory" aria-pressed="false">Memory</button>
   <button class="tab" data-tab="setup" aria-pressed="false">Setup</button>
 </nav>
 
@@ -192,6 +193,41 @@
     <label class="muted" for="studioUrl" style="margin-top:12px">Studio URL</label>
     <input id="studioUrl" placeholder="https://your-studio-deployment.tmp.now">
     <p class="hint">Honest limits: a web page cannot press send inside WhatsApp or control other apps on the phone. The deck drafts, you confirm. Real automation of other apps needs a native Android app; that is the next tier and we can blueprint it.</p>
+  </div>
+</section>
+
+<!-- ================= MEMORY VAULT ================= -->
+<section class="view" data-view="memory" aria-label="Memory vault">
+  <div class="panel">
+    <div class="panel-head"><h2>Phone vault <span class="muted" id="vaultUsage">large mid-term memory, on this phone</span></h2></div>
+    <div class="capture-grid">
+      <button class="cap" id="vaultAdd"><b>Save a file</b><span>pick any file; it is stored in the vault on this phone</span></button>
+      <button class="cap" id="vaultPersist"><b>Lock vault</b><span>ask the browser to never evict the vault automatically</span></button>
+    </div>
+    <input type="file" id="vaultFile" class="hidden" multiple>
+    <div id="vaultList" class="packet-body muted">Vault is empty. Saved files survive refreshes and restarts.</div>
+    <p class="hint">The vault uses IndexedDB: hundreds of megabytes to gigabytes depending on your free space. It is your private long-term memory, but a browser can still be cleared (app deletion, browsing-data wipe). For eternity, archive to the GitHub vault below: it is free, permanent and versioned.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>GitHub vault for eternity <span class="muted">free, permanent, versioned</span></h2></div>
+    <label class="muted" for="ghRepo">repository</label>
+    <input id="ghRepo" placeholder="reezdigital1-svg/ReezDigital" spellcheck="false" autocomplete="off">
+    <label class="muted" for="ghToken">GitHub token (fine-grained, only this repo, contents read + write)</label>
+    <input id="ghToken" type="password" placeholder="paste once; it lives on this phone only" spellcheck="false" autocomplete="off">
+    <button class="btn b-approve" id="ghSave">save vault keys</button>
+    <button class="btn" id="ghSync">archive all to GitHub</button>
+    <p class="result muted" id="ghResult"></p>
+    <p class="hint">Files are pushed to a deck-vault folder in your own repository through the official GitHub API. The token is stored only on this phone and is used only for that folder. Create the token at GitHub Settings, Developer settings, Fine-grained tokens, and limit it to this one repository. If you ever lose the phone, revoke the token in one click.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Free AI, working for you</h2></div>
+    <div class="capture-grid">
+      <button class="cap" id="aiStudio"><b>Nico Gen Studio</b><span>video generation, free forever, no API</span></button>
+      <button class="cap" id="aiRing"><b>Ring agents</b><span>jobs: any agent on your exchange, free</span></button>
+    </div>
+    <p class="hint">Honest picture of all AI models for free: nothing forces every company to open every model, so nobody can truly promise you all of them. What we can promise: everything we OWN stays free (Studio, Nicodiff, the Exchange ring, this deck) and everything we USE has a free door (Mixkit, Coverr, uguu, GitHub, Vercel hobby, open-weight models on your machine). When a paid model ever beats a free one for your work it stays your call, like Higgsfield credits were.</p>
   </div>
 </section>
 

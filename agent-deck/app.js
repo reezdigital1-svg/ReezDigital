@@ -509,8 +509,166 @@ function runIntent(say){
   }
 }
 
+/* ---------- memory vault ---------- */
+/* Layer 1: IndexedDB on this phone (big, private, survives restarts).
+   Layer 2: GitHub archive (free, permanent, versioned) = the eternity layer. */
+
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    const rq=indexedDB.open('adeck-vault',1);
+    rq.onupgradeneeded=()=>{rq.result.createObjectStore('files',{keyPath:'id'})};
+    rq.onsuccess=()=>res(rq.result);
+    rq.onerror=()=>rej(rq.error);
+  });
+}
+async function vaultPut(rec){
+  const db=await idbOpen();
+  return new Promise((res,rej)=>{
+    const tx=db.transaction('files','readwrite');
+    tx.objectStore('files').put(rec);
+    tx.oncomplete=res; tx.onerror=()=>rej(tx.error);
+  });
+}
+async function vaultAll(){
+  const db=await idbOpen();
+  return new Promise((res,rej)=>{
+    const rq=db.transaction('files').objectStore('files').getAll();
+    rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error);
+  });
+}
+async function vaultDel(id){
+  const db=await idbOpen();
+  return new Promise((res,rej)=>{
+    const tx=db.transaction('files','readwrite');
+    tx.objectStore('files').delete(id);
+    tx.oncomplete=res; tx.onerror=()=>rej(tx.error);
+  });
+}
+
+function gbFmt(n){
+  const u=['B','KB','MB','GB'];let i=0;
+  while(n>=1024&&i<3){n/=1024;i++}
+  return n.toFixed(i?1:0)+' '+u[i];
+}
+
+async function vaultUsage(){
+  try{
+    const est=await navigator.storage.estimate();
+    const files=await vaultAll();
+    const tot=files.reduce((a,f)=>a+(f.blob&&f.blob.size||0),0);
+    $('vaultUsage').textContent=files.length+' file(s), '+gbFmt(tot)+' used of '+gbFmt(est.quota||0)+' available';
+  }catch(e){$('vaultUsage').textContent='usage unknown: '+e.message}
+}
+
+async function renderVault(){
+  const files=await vaultAll(), el=$('vaultList');
+  if(!files.length){el.textContent='Vault is empty. Saved files survive refreshes and restarts.';el.classList.add('muted');await vaultUsage();return}
+  el.classList.remove('muted');
+  el.innerHTML='';
+  files.slice().sort((a,b)=>b.ts-a.ts).forEach(f=>{
+    const row=document.createElement('div');
+    row.className='vault-row';
+    const meta=document.createElement('div');
+    meta.innerHTML='<b>'+esc(f.name)+'</b> <span class="muted">'+gbFmt(f.blob.size||0)+'  '+f.ts+(f.gh?'  \u00b7 archived to GitHub':'')+'</span>';
+    meta.style.cssText='flex:1;min-width:140px';
+    const bOpen=document.createElement('button'); bOpen.className='btn'; bOpen.textContent='open';
+    bOpen.onclick=()=>{const u=URL.createObjectURL(f.blob);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),30000)};
+    const bGh=document.createElement('button'); bGh.className='btn'; bGh.textContent=f.gh?'re-archive':'archive';
+    bGh.onclick=async()=>{try{await ghArchiveOne(f);f.gh=true;await vaultPut(f);renderVault()}catch(e){alert2('archive failed: '+e.message)}};
+    const bDel=document.createElement('button'); bDel.className='btn'; bDel.textContent='delete';
+    bDel.onclick=async()=>{await vaultDel(f.id);renderVault();slog('vault deleted: '+f.name)};
+    row.append(meta,bOpen,bGh,bDel);
+    el.appendChild(row);
+  });
+  await vaultUsage();
+}
+
+$('vaultAdd').addEventListener('click',()=>$('vaultFile').click());
+$('vaultFile').addEventListener('change',async e=>{
+  for(const f of e.target.files){
+    await vaultPut({id:Date.now()+'-'+f.name+'-'+Math.random().toString(36).slice(2,7),name:f.name,blob:f,ts:now()});
+    slog('vault saved: '+f.name+' ('+gbFmt(f.size)+')');
+  }
+  e.target.value=''; renderVault();
+});
+$('vaultPersist').addEventListener('click',async()=>{
+  try{
+    const ok=await navigator.storage.persist();
+    slog('vault persistence request: '+(ok?'GRANTED, browser will not evict':'denied for now (install the deck as an app, then retry)'));
+    alert2(ok?'Vault locked: the browser will not clear it on its own.':'Not granted yet. Install the deck to your home screen and retry once.')
+  }catch(e){alert2('persistence request failed: '+e.message)}
+});
+
+/* GitHub eternity layer */
+const LS_GH='adeck.gh';
+function gh(){try{return JSON.parse(LS.getItem(LS_GH)||'{}')}catch(e){return{}}}
+$('ghSave').addEventListener('click',()=>{
+  const repo=($('ghRepo').value||'').trim()||'reezdigital1-svg/ReezDigital';
+  const token=($('ghToken').value||'').trim();
+  if(!token)return alert2('paste a fine-grained token first');
+  LS.setItem(LS_GH,JSON.stringify({repo,token}));
+  $('ghResult').textContent='saved: '+repo+' (token stays on this phone only)';
+  slog('GitHub vault keys saved for '+repo);
+});
+
+function b64Of(blob){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>{
+      const bytes=new Uint8Array(r.result); let bin='';
+      const CH=32768;
+      for(let i=0;i<bytes.length;i+=CH){bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+CH))}
+      res(btoa(bin));
+    };
+    r.onerror=()=>rej(r.error);
+    r.readAsArrayBuffer(blob);
+  });
+}
+async function ghArchiveOne(rec){
+  const g=gh();
+  if(!g.token||!g.repo)throw new Error('save the GitHub token and repo first');
+  const content=await b64Of(rec.blob);
+  const path='deck-vault/'+rec.name;
+  const api='https://api.github.com/repos/'+g.repo+'/contents/'+path;
+  const put=(sha)=>fetch(api,{
+    method:'PUT',
+    headers:{'Authorization':'Bearer '+g.token,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
+    body:JSON.stringify({message:'vault archive: '+rec.name,content,sha})
+  });
+  let r=await put(undefined);
+  if(r.status===422){
+    const g0=await fetch(api,{headers:{'Authorization':'Bearer '+g.token,'Accept':'application/vnd.github+json'}});
+    const j0=await g0.json();
+    if(g0.ok&&j0.sha)r=await put(j0.sha);
+  }
+  if(!r.ok)throw new Error('GitHub '+r.status+' '+(await r.text()).slice(0,160));
+  return 'https://github.com/'+g.repo+'/tree/main/deck-vault';
+}
+$('ghSync').addEventListener('click',async()=>{
+  const btn=$('ghSync'); btn.disabled=true; btn.textContent='archiving\u2026';
+  try{
+    const files=await vaultAll();
+    if(!files.length)throw new Error('vault is empty');
+    let ok=0;
+    for(const f of files){
+      try{await ghArchiveOne(f);f.gh=true;await vaultPut(f);ok++}
+      catch(e){slog('archive failed for '+f.name+': '+e.message)}
+    }
+    const g=gh();
+    $('ghResult').textContent='archived '+ok+' of '+files.length+' file(s): https://github.com/'+g.repo+'/tree/main/deck-vault';
+    slog('GitHub archive done: '+ok+'/'+files.length);
+    renderVault();
+  }catch(e){alert2('archive failed: '+e.message)}
+  btn.disabled=false; btn.textContent='archive all to GitHub';
+});
+
+/* free AI quick buttons */
+$('aiStudio').addEventListener('click',()=>$('goStudio').click());
+$('aiRing').addEventListener('click',()=>switchTab('jobs'));
+
 /* ---------- boot ---------- */
-renderLog(); renderGrants(); renderDocList(); renderDaily();
+renderLog(); renderGrants(); renderDocList(); renderDaily(); renderVault();
+(function(){const g=gh(); if(g.repo&&$("ghRepo"))$("ghRepo").value=g.repo;})();
 if(state.cfg.studio&&$("studioUrl"))$("studioUrl").value=state.cfg.studio;
 slog("Agent Deck opened. Default deny active.");
 pruneGrants(); renderGrants();
