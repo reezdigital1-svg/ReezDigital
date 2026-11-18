@@ -767,7 +767,15 @@ async function labLoad(){
       ort.env.wasm.simd=true;
     }
     st.textContent='loading the 1.46 MB model\u2026';
-    LAB.sess=await ort.InferenceSession.create('models/nicodiff_unet.onnx',{executionProviders:['wasm']});
+    // XHR works from both https deploys and file:// inside the Android APK
+    const bytes=await new Promise((res,rej)=>{
+      const x=new XMLHttpRequest(); x.open('GET','models/nicodiff_unet.onnx');
+      x.responseType='arraybuffer';
+      x.onload=()=>res(new Uint8Array(x.response));
+      x.onerror=()=>rej(new Error('model file read failed'));
+      x.send();
+    });
+    LAB.sess=await ort.InferenceSession.create(bytes,{executionProviders:['wasm']});
     st.textContent='model ready: 359,587 parameters, trained 20,755 steps, C1 PASS. 60 denoising steps per world.';
     $('labGo').disabled=false; $('labAgain').disabled=false;
     slog('Nicodiff loaded on this phone via ONNX Runtime Web');
@@ -837,8 +845,79 @@ $('labLoad').addEventListener('click',labLoad);
 $('labGo').addEventListener('click',labGenerate);
 $('labAgain').addEventListener('click',labGenerate);
 
+/* ---------- care tab: real device control via the Android bridge ---------- */
+const NATIVE=typeof window.AndroidBridge==="object"&&window.AndroidBridge&&window.AndroidBridge.isNative&&window.AndroidBridge.isNative();
+
+function careFail(where){
+  return "<p class=\"muted\">This action needs the Agent Deck app on your phone, not a browser page. Open the APK instead of the website: "+where+".</p>";
+}
+
+function renderCareDevice(){
+  if(!NATIVE){$("careMode").textContent="browser mode: limited";$("careDevice").innerHTML=careFail("the Care tab only works in the app");return}
+  $("careMode").textContent="app mode: full access";
+  try{
+    const d=JSON.parse(window.AndroidBridge.deviceInfo());
+    if(d.error){$("careDevice").textContent="Android bridge error: "+d.error;return}
+    const rows=[
+      "MODEL   "+d.brand+" "+d.model+" (Android "+d.androidVersion+", SDK "+d.sdk+")",
+      "RAM     "+d.ramAvailGb+" GB free of "+d.ramTotalGb+" GB ("+d.ramPctUsed+"% in use)"+(d.ramLow?"   \u26a0 LOW MEMORY right now":""),
+      "STORAGE "+d.romFreeGb+" GB free of "+d.romTotalGb+" GB ("+d.romFreePct+"% free)  "+(d.romFreePct<10?"\u26a0 UNDER 10% FREE: the freeze machine. Clear space now.":"OK"),
+      "BATTERY "+d.batteryPct+"% "+(d.batteryCharging?"charging":"on battery")+", temp "+d.batteryTempC+"\u00b0C, health: "+d.batteryHealth,
+      "CPU     "+d.cpuCores+" cores \u00b7 phone has been awake "+d.upTimeHrs+"h"
+    ];
+    $("careDevice").classList.remove("muted");
+    $("careDevice").textContent=rows.join("\n");
+    if(d.romFreePct<10) slog("CARE WARNING: storage under 10% free. This is what causes app freezes.");
+  }catch(e){$("careDevice").textContent="care error: "+e.message}
+}
+
+function renderCareApps(){
+  if(!NATIVE){$("careApps").innerHTML=careFail("the app list reads Android directly");return}
+  const q=(document.getElementById("careAppSearch").value||"").toLowerCase();
+  let data;
+  try{data=JSON.parse(window.AndroidBridge.apps())}catch(e){$("careApps").textContent="apps read failed: "+e.message;return}
+  if(data.error){$("careApps").textContent="apps read failed: "+data.error;return}
+  const el=$("careApps"); el.innerHTML="";
+  const apps=data.apps.filter(a=>!q||(a.label||"").toLowerCase().includes(q)||(a.pkg||"").toLowerCase().includes(q))
+    .sort((a,b)=>(a.label||"").localeCompare(b.label||""));
+  apps.forEach(a=>{
+    const row=document.createElement("div"); row.className="vault-row";
+    const meta=document.createElement("div"); meta.style.cssText="flex:1;min-width:120px";
+    meta.innerHTML="<b>"+esc(a.label)+"</b> <span class=\"muted\">"+esc(a.pkg)+" v"+esc(a.version)+(a.system?" \u00b7 system":"")+(a.apkMb>=0?" \u00b7 "+a.apkMb+" MB":"")+"</span>";
+    const mk=(txt,fn)=>{const b=document.createElement("button");b.className="btn";b.textContent=txt;b.onclick=fn;return b};
+    if(a.launchable)row.appendChild(mk("open",()=>{window.AndroidBridge.launchApp(a.pkg)||AndroidBridge.toast("cannot open "+a.label)}));
+    if(!a.system)row.appendChild(mk("freeze",()=>{
+      window.AndroidBridge.killBackground(a.pkg);
+      slog("care: background processes stopped for "+a.label);
+      window.AndroidBridge.toast("background stopped: "+a.label);
+    }));
+    row.appendChild(mk("inspect",()=>{window.AndroidBridge.openAppInfo(a.pkg)||AndroidBridge.toast("settings did not open")}));
+    row.appendChild(meta);
+    el.appendChild(row);
+  });
+  if(!apps.length)el.innerHTML='<p class="muted">no apps match that search</p>';
+}
+
+if(NATIVE){
+  $("careAppSearch").addEventListener("input",()=>renderCareApps());
+  $("careFreeRam").addEventListener("click",()=>{
+    window.AndroidBridge.freeRam();
+    slog("care: free RAM requested (Android trimmed background apps)");
+    window.AndroidBridge.toast("freeing RAM: done");
+    setTimeout(renderCareDevice,800);
+  });
+  $("careStorage").addEventListener("click",()=>window.AndroidBridge.openStorageSettings());
+  $("careMemory").addEventListener("click",()=>window.AndroidBridge.openMemorySettings());
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)renderCareDevice()});
+}
+
+/* honest button handling: no button does nothing anymore */
+window.addEventListener("error",e=>{
+  if(NATIVE&&window.AndroidBridge.toast)window.AndroidBridge.toast(" Agent Deck hit an error: "+e.message);
+});
+
 /* ---------- boot ---------- */
-renderLog(); renderGrants(); renderDocList(); renderDaily(); renderVault();
+renderLog(); renderGrants(); renderDocList(); renderDaily(); renderVault(); renderCareDevice(); renderCareApps();
 (function(){const g=gh(); if(g.repo&&$("ghRepo"))$("ghRepo").value=g.repo;})();
 if(state.cfg.studio&&$("studioUrl"))$("studioUrl").value=state.cfg.studio;
 renderKB();

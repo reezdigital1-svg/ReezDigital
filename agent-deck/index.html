@@ -35,6 +35,7 @@
   <button class="tab" data-tab="memory" aria-pressed="false">Memory</button>
   <button class="tab" data-tab="know" aria-pressed="false">Knowledge</button>
   <button class="tab" data-tab="lab" aria-pressed="false">Lab</button>
+  <button class="tab" data-tab="care" aria-pressed="false">Care</button>
   <button class="tab" data-tab="setup" aria-pressed="false">Setup</button>
 </nav>
 
@@ -270,6 +271,26 @@
       <button class="btn" id="labAgain" disabled>another world</button>
       <button class="btn b-approve" id="labSave" disabled>save to vault</button>
     </div>
+  </div>
+</section>
+
+<!-- ================= CARE (native bridge) ================= -->
+<section class="view" data-view="care" aria-label="Phone care">
+  <div class="panel">
+    <div class="panel-head"><h2>Phone care <span class="muted" id="careMode">checking app mode...</span></h2></div>
+    <div id="careDevice" class="packet-body muted">Loading real device numbers from Android itself.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn b-approve" id="careFreeRam">free RAM now</button>
+      <button class="btn" id="careStorage">open storage settings</button>
+      <button class="btn" id="careMemory">open RAM expansion settings</button>
+    </div>
+    <p class="hint">free RAM uses Android\u2019s own background-app trimming, the same one your phone\u2019s device care uses. The RAM expansion button jumps straight to the settings screen where your phone hides \u201cRAM Plus\u201d or \u201cMemory extension\u201d.</p>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>All my apps <span class="muted">open, freeze, inspect</span></h2></div>
+    <input id="careAppSearch" placeholder="search installed apps...">
+    <div id="careApps" class="packet-body muted">Loading the app list from the phone.</div>
+    <p class="hint">open launches the app. freeze asks Android to stop its background processes: the honest fix for a misbehaving app before uninstalling. inspect opens Android\u2019s own App Info where the cache-clear and uninstall buttons live.</p>
   </div>
 </section>
 
