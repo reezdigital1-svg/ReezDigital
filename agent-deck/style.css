@@ -163,4 +163,18 @@ label{font-size:13px}
 .vault-row .btn{font-size:12px;padding:6px 10px}
 .vault-row .muted{font-size:12px}
 
+/* knowledge base */
+.kb-chips{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
+.chip{
+  background:var(--panel-2);border:1px solid var(--line);color:var(--muted);
+  border-radius:999px;padding:5px 12px;font-family:inherit;font-size:12.5px;cursor:pointer;
+}
+.chip.is-on{border-color:var(--a);color:var(--text)}
+.kb{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+  padding:calc(var(--sp)*2);margin-bottom:8px}
+.kb b{font-family:"Space Grotesk",sans-serif;font-size:14px;display:block;padding-right:64px}
+.kb .kb-tag{float:right;font-size:11px;color:var(--b);border:1px solid var(--line);
+  border-radius:999px;padding:2px 8px;margin-top:2px}
+.kb p{margin:6px 0 0;font-size:13px;line-height:1.65;color:var(--muted)}
+
 .foot{margin-top:calc(var(--sp)*3);color:var(--muted);font-size:12.5px;line-height:1.7;padding:0 calc(var(--sp)*2)}

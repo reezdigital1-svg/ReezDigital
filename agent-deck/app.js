@@ -666,9 +666,80 @@ $('ghSync').addEventListener('click',async()=>{
 $('aiStudio').addEventListener('click',()=>$('goStudio').click());
 $('aiRing').addEventListener('click',()=>switchTab('jobs'));
 
+/* ---------- AI model knowledge base ---------- */
+const KB=[
+ {cat:'claude',name:'Claude Fable 5.2 (current world flagship)',
+  f:'Released November 9, 2026. Anthropic\u2019s most capable model: top results in coding, reasoning, vision, math and science. 1M token context, up to 128K output, 30% faster output than 5.1, anti-distillation protections, can coordinate 1,000+ agents at once. Available to claude.ai Pro, Max, Ultra, Team, Enterprise and on the Claude API, AWS Bedrock, Google Cloud, Microsoft Foundry.'},
+ {cat:'claude',name:'Claude Fable 5.5 (pre-release, next flagship)',
+  f:'NOT officially released. Leaked October 13, 2026 in the Microsoft Azure catalog with a GA status, then pulled; LiteLLM briefly listed claude-fable-5-5 with prices copied from Fable 5.1. Reports say partners already have early access. Treat any Fable 5.5 specs or downloads found online right now as rumor or fake. This entry updates the day Anthropic publishes official specs.'},
+ {cat:'claude',name:'Claude Fable 5',
+  f:'Released June 9, 2026. First Mythos-class model opened to the public. $10 per million input tokens, $50 per million output, cache read $1, batch API 50% off. 1M context, 128K max output, knowledge cutoff January 2026. Now legacy; retirement not sooner than June 9, 2027.'},
+ {cat:'claude',name:'Claude Fable 5.1',
+  f:'Released September 2026. Same capability class as Fable 5, about 25% cheaper to run for typical workloads, up to ~45% cheaper for complex coding and long agentic tasks.'},
+ {cat:'claude',name:'Claude Opus 5.5 / Sonnet 5.5 / Haiku 5.5',
+  f:'The daily-driver tiers released September 2026. Anthropic guidance: Opus 5.5 for everyday work ($4/$20 per MTok), Sonnet 5.5 ($2/$10) for volume, Haiku 5.5 (from $0.10/$0.50) for cheap scale. All have 1M context.'},
+ {cat:'claude',name:'Claude Mythos (restricted twin)',
+  f:'Mythos is the same underlying model as Fable but with fewer safeguards, offered only to vetted organizations in cybersecurity and life sciences. Roughly 8 trillion parameters by industry estimates. You cannot sign up for it; verified orgs only.'},
+ {cat:'claude',name:'Free Claude doors',
+  f:'claude.ai has a free tier with limited use of strong models. Claude is also the agent connected to your Agent Exchange ring, so you already send Claude real jobs at zero cost through the ring.'},
+ {cat:'openai',name:'OpenAI GPT-5 family + Astra',
+  f:'GPT-5 Astra is OpenAI\u2019s current flagship line. Leaks in November 2026 showed OpenAI A/B testing a GPT-6.2 Astra variant in Codex usage analytics before any announcement. Same rule as Fable 5.5: pre-release info is rumor until OpenAI speaks.'},
+ {cat:'openai',name:'ChatGPT free tier',
+  f:'chatgpt.com is free with limits, including a limited number of the strongest model replies per day. Custom GPT Actions (like the kit in your repo) work on the free tier, which is how your ChatGPT seat reaches the ring.'},
+ {cat:'openai',name:'OpenAI API pricing shape',
+  f:'Pay per token, in and out, with prompt caching and a Batch API at 50% off. Image and audio models priced per generation/minute. No unlimited free API; costs scale with usage.'},
+ {cat:'google',name:'Google Gemini 4 Carbon',
+  f:'Google\u2019s flagship released November 2026, the model Fable 5.2 benchmarked against. Strong multimodal (text, image, audio, video input). Free personal access through the Gemini app; free developers entry through Google AI Studio with rate limits.'},
+ {cat:'open',name:'What open weights means',
+  f:'Open-weight models publish the trained model file itself. You download it once and run it on your own machine forever, free, offline. The catch: nobody can hand you the newest flagship as open weights, and running big ones needs real GPU memory. Open weights is the only path to true free frontier-adjacent AI.'},
+ {cat:'open',name:'Llama (Meta)',
+  f:'Meta\u2019s open-weight family. Free to download and run, license restricts some very-large-company uses. The classic choice for a private local assistant on your own machine.'},
+ {cat:'open',name:'Mistral',
+  f:'European lab, famous for permissive small open models plus paid frontier APIs. Its small open models run on modest hardware. The model writing this knowledge base, via your Agent Exchange setup.'},
+ {cat:'open',name:'Qwen (Alibaba) and DeepSeek',
+  f:'Two strong open-weight families from China. Qwen covers many sizes and languages; DeepSeek got famous for near-frontier reasoning at train-time prices far below US labs. Both free to download and run yourself.'},
+ {cat:'media',name:'FLUX.1 image models',
+  f:'FLUX.1 schnell: Apache 2.0 license, free including commercial work. FLUX.1 dev: stronger, but its license is non-commercial. Current photoreal open-weights king at smaller sizes; needs a GPU for comfortable use.'},
+ {cat:'media',name:'Stable Diffusion XL',
+  f:'Older but runs on weak hardware, huge fine-tune community, fully open. Still the safest pick for low-VRAM machines.'},
+ {cat:'media',name:'AI video: the paid truth',
+  f:'The best AI video (Sora, Veo, Higgsfield, Runway, Pika) is closed, paid, and credit-metered. There is no open-weights model that matches them on a phone. Your legal free paths: our Nicogen engine, free-tier trials where offered, and footage sites Mixkit/Coverr which are license-clean for your videos.'},
+ {cat:'ours',name:'Nico Gen Studio (yours, free forever)',
+  f:'Your own browser video engine: fBm generative scenes, keyword routing, halation film pass, 9:16 and 16:9, no API, no credits. One tap opens it from this deck. It also exists as a Python engine and MCP server in your repo.'},
+ {cat:'ours',name:'Nicodiff v0.1 (your own diffusion model)',
+  f:'Built and trained from scratch in your repo: 359,587 parameters, 20,755 steps, grade C1 PASS with worst channel G std 7.6%. Exports to a single 1.45MB ONNX file with parity 2.38e-07, ready for browser inference. The road to photos-real is on your GPU machine with the same code.'},
+ {cat:'ours',name:'Agent Exchange ring',
+  f:'Your public agent mail system on Vercel: any agent with a name can send and receive, transcripts archived in your GitHub repo. Claude is connected with an hourly auto-reply run; your phone now reaches it through this deck.'},
+ {cat:'free',name:'Rule of free: the honest map',
+  f:'Nothing forces companies to open their best models, so nobody truly gets all AI models free. The working map: free chat tiers (claude.ai, chatgpt.com, gemini), open weights on your own hardware (Llama, Mistral, Qwen, DeepSeek, FLUX schnell), per-project free doors (Vercel hobby, GitHub, Mixkit, Coverr, uguu), and everything you build yourself (Studio, Nicodiff, the ring, this deck).'},
+ {cat:'free',name:'Batch and caching: pay half',
+  f:'On Claude API: Batch API is 50% off input and output; prompt cache read is a fraction of input price. Design agent jobs around batching + caching before paying for a bigger plan.'},
+ {cat:'free',name:'Free-model scam pattern',
+  f:'Sites (or APKs) offering free GPT-6, free Fable 5.5, cracked Higgsfield: they steal credentials, resell stolen API keys, or ship malware. Never sign in to a model outside its official site, never paste a token into a site you did not choose.'}
+];
+let kbCat='all', kbQ='';
+function renderKB(){
+  const el=$('kbList'); el.innerHTML='';
+  const q=kbQ.trim().toLowerCase();
+  const rows=KB.filter(k=>(kbCat==='all'||k.cat===kbCat)&&(!q||(k.name+' '+k.f+' '+k.cat).toLowerCase().includes(q)));
+  if(!rows.length){el.innerHTML='<p class="muted" style="font-size:13px">nothing matches that search</p>';return}
+  rows.forEach(k=>{
+    const d=document.createElement('div'); d.className='kb';
+    d.innerHTML='<b>'+esc(k.name)+'</b><span class="kb-tag">'+esc(k.cat)+'</span><p>'+esc(k.f)+'</p>';
+    el.appendChild(d);
+  });
+}
+$('kbSearch').addEventListener('input',e=>{kbQ=e.target.value;renderKB()});
+$('kbChips').addEventListener('click',e=>{
+  const b=e.target.closest('.chip'); if(!b)return;
+  document.querySelectorAll('#kbChips .chip').forEach(x=>x.classList.toggle('is-on',x===b));
+  kbCat=b.dataset.cat; renderKB();
+});
+
 /* ---------- boot ---------- */
 renderLog(); renderGrants(); renderDocList(); renderDaily(); renderVault();
 (function(){const g=gh(); if(g.repo&&$("ghRepo"))$("ghRepo").value=g.repo;})();
 if(state.cfg.studio&&$("studioUrl"))$("studioUrl").value=state.cfg.studio;
+renderKB();
 slog("Agent Deck opened. Default deny active.");
 pruneGrants(); renderGrants();

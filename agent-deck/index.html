@@ -33,6 +33,7 @@
   <button class="tab" data-tab="doctor" aria-pressed="false">Doctor</button>
   <button class="tab" data-tab="voice" aria-pressed="false">Voice</button>
   <button class="tab" data-tab="memory" aria-pressed="false">Memory</button>
+  <button class="tab" data-tab="know" aria-pressed="false">Knowledge</button>
   <button class="tab" data-tab="setup" aria-pressed="false">Setup</button>
 </nav>
 
@@ -228,6 +229,26 @@
       <button class="cap" id="aiRing"><b>Ring agents</b><span>jobs: any agent on your exchange, free</span></button>
     </div>
     <p class="hint">Honest picture of all AI models for free: nothing forces every company to open every model, so nobody can truly promise you all of them. What we can promise: everything we OWN stays free (Studio, Nicodiff, the Exchange ring, this deck) and everything we USE has a free door (Mixkit, Coverr, uguu, GitHub, Vercel hobby, open-weight models on your machine). When a paid model ever beats a free one for your work it stays your call, like Higgsfield credits were.</p>
+  </div>
+</section>
+
+<!-- ================= AI MODEL KNOWLEDGE ================= -->
+<section class="view" data-view="know" aria-label="AI model knowledge">
+  <div class="panel">
+    <div class="panel-head"><h2>AI model knowledge <span class="muted">verified facts, offline on this phone</span></h2></div>
+    <input id="kbSearch" placeholder="search: fable, gemini, free video, pricing...">
+    <div class="kb-chips" id="kbChips">
+      <button class="chip is-on" data-cat="all">all</button>
+      <button class="chip" data-cat="claude">claude</button>
+      <button class="chip" data-cat="openai">openai</button>
+      <button class="chip" data-cat="google">google</button>
+      <button class="chip" data-cat="open">open weights</button>
+      <button class="chip" data-cat="media">image + video</button>
+      <button class="chip" data-cat="ours">ours</button>
+      <button class="chip" data-cat="free">free paths</button>
+    </div>
+    <div id="kbList"></div>
+    <p class="hint" id="kbStamp">Researched from Anthropic, OpenAI, Google and open-source sources on this build date. Fable 5.5 is pre-release: its entry updates the day anything official drops.</p>
   </div>
 </section>
 
