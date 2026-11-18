@@ -177,4 +177,9 @@ label{font-size:13px}
   border-radius:999px;padding:2px 8px;margin-top:2px}
 .kb p{margin:6px 0 0;font-size:13px;line-height:1.65;color:var(--muted)}
 
+/* model lab */
+.lab-stage{margin-top:12px;display:grid;place-items:center;background:var(--panel-2);
+  border:1px solid var(--line);border-radius:12px;padding:16px;min-height:220px}
+#labCanvas{width:192px;height:192px;image-rendering:pixelated;border-radius:8px;background:#0A0E18}
+
 .foot{margin-top:calc(var(--sp)*3);color:var(--muted);font-size:12.5px;line-height:1.7;padding:0 calc(var(--sp)*2)}

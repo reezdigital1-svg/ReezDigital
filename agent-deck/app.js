@@ -736,6 +736,107 @@ $('kbChips').addEventListener('click',e=>{
   kbCat=b.dataset.cat; renderKB();
 });
 
+/* ---------- model lab: Nicodiff DDIM in the browser (ONNX Runtime Web) ---------- */
+/* Algorithm verified against nicodiff.py: same schedule, same ladder, same math
+   (Node/onnxruntime test: alpha_bar[0]=0.99975, [399]=3.64e-05, ts ladder identical). */
+
+const LAB={sess:null,T:400,IMG:32,CH:3,STEPS:60,loading:false,ts:[]};
+(function(){for(let i=0;i<LAB.STEPS;i++)LAB.ts.push(Math.trunc(399-i*(399/59)))})();
+(function(){ // float32 alphas_cumprod, matches torch.linspace(1e-4,0.02,400)*(1000/400)
+  const b=new Float64Array(400),a=new Float64Array(400);let c=1;
+  for(let i=0;i<400;i++){b[i]=(1e-4+i*(0.02-1e-4)/399)*(1000/400);c*=(1-b[i]);a[i]=c}
+  LAB.ab=new Float32Array(a);
+})();
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+async function labLoad(){
+  if(LAB.sess||LAB.loading)return;
+  LAB.loading=true;
+  const st=$('labStatus'),btn=$('labLoad');
+  btn.disabled=true; st.textContent='fetching runtime (one-time, ~3 MB)\u2026';
+  try{
+    if(!window.ort){
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/dist/ort.min.js';
+        s.onload=res; s.onerror=()=>rej(new Error('runtime download failed'));
+        document.head.appendChild(s);
+      });
+      ort.env.wasm.wasmPaths='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/dist/';
+      ort.env.wasm.numThreads=1; // no cross-origin isolation on this host
+      ort.env.wasm.simd=true;
+    }
+    st.textContent='loading the 1.46 MB model\u2026';
+    LAB.sess=await ort.InferenceSession.create('models/nicodiff_unet.onnx',{executionProviders:['wasm']});
+    st.textContent='model ready: 359,587 parameters, trained 20,755 steps, C1 PASS. 60 denoising steps per world.';
+    $('labGo').disabled=false; $('labAgain').disabled=false;
+    slog('Nicodiff loaded on this phone via ONNX Runtime Web');
+  }catch(e){
+    st.textContent='load failed: '+e.message+' (needs internet once for the runtime; the model itself is small)';
+  }
+  LAB.loading=false; btn.disabled=!!LAB.sess; btn.textContent='model loaded';
+}
+
+async function labGenerate(){
+  if(!LAB.sess){labLoad();return}
+  const go=$('labGo'),st=$('labStatus');
+  go.disabled=true; go.textContent='denoising\u2026';
+  const seedIn=($('labSeed').value||'').trim();
+  const seed=seedIn?(+seedIn>>>0):(Math.floor(Math.random()*4294967295)>>>0);
+  try{
+    const t0=performance.now();
+    const rnd=mulberry32(seed);
+    const gauss=()=>{let u=0,v=0;while(!u)u=rnd();while(!v)v=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+    let x=new Float32Array(LAB.CH*LAB.IMG*LAB.IMG);
+    for(let i=0;i<x.length;i++)x[i]=gauss();
+    const ab=LAB.ab,S=Math.sqrt;
+    for(let i=0;i<LAB.STEPS;i++){
+      const t=LAB.ts[i], abt=ab[t];
+      const out=await LAB.sess.run({
+        x:new ort.Tensor('float32',x.slice(0),[1,LAB.CH,LAB.IMG,LAB.IMG]),
+        t:new ort.Tensor('int64',BigInt64Array.from([BigInt(t)]),[1])});
+      const e=out.eps.data;
+      const abn=i<LAB.STEPS-1?ab[LAB.ts[i+1]]:0;
+      const sA=S(abn),sB=S(1-abn),sT=S(abt),sU=S(1-abt);
+      for(let j=0;j<x.length;j++){
+        let x0=(x[j]-sU*e[j])/sT;
+        x0=x0<-1.6?-1.6:x0>1.6?1.6:x0;
+        x[j]=i<LAB.STEPS-1?sA*x0+sB*e[j]:x0;
+      }
+      if(i%10===0){st.textContent='denoising step '+(i+1)+' of '+LAB.STEPS+'\u2026';go.textContent='denoising '+(i+1)+'/'+LAB.STEPS;await new Promise(r=>setTimeout(r,0))}
+    }
+    const cv=$('labCanvas'),cx=cv.getContext('2d'),im=cx.createImageData(32,32);
+    for(let j=0;j<x.length;j+=3){
+      const r=Math.max(-1,Math.min(1,x[j])),g=Math.max(-1,Math.min(1,x[j+1])),b=Math.max(-1,Math.min(1,x[j+2]));
+      const k=j/3*4;
+      im.data[k]=Math.round((r+1)/2*255); im.data[k+1]=Math.round((g+1)/2*255);
+      im.data[k+2]=Math.round((b+1)/2*255); im.data[k+3]=255;
+    }
+    cx.putImageData(im,0,0);
+    LAB.lastSeed=seed;
+    const dt=((performance.now()-t0)/1000).toFixed(1);
+    st.textContent='world ready. seed '+seed+', '+dt+'s on this phone\u2019s own brain.';
+    go.textContent='generate a world'; $('labSave').disabled=false;
+    slog('Nicodiff generated a world: seed '+seed+' in '+dt+'s');
+  }catch(e){
+    st.textContent='generation failed: '+e.message; go.textContent='generate a world';
+  }
+  go.disabled=false;
+}
+
+$('labSave').addEventListener('click',async()=>{
+  const cv=$('labCanvas');
+  cv.toBlob(async b=>{
+    if(!b)return alert2('save failed: canvas empty');
+    await vaultPut({id:Date.now()+'-nicodiff-'+LAB.lastSeed,name:'nicodiff-world-'+LAB.lastSeed+'.png',blob:b,ts:now()});
+    slog(' Nicodiff world saved to vault: seed '+LAB.lastSeed);
+    renderVault();
+  },'image/png');
+});
+$('labLoad').addEventListener('click',labLoad);
+$('labGo').addEventListener('click',labGenerate);
+$('labAgain').addEventListener('click',labGenerate);
+
 /* ---------- boot ---------- */
 renderLog(); renderGrants(); renderDocList(); renderDaily(); renderVault();
 (function(){const g=gh(); if(g.repo&&$("ghRepo"))$("ghRepo").value=g.repo;})();

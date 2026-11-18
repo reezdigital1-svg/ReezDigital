@@ -34,6 +34,7 @@
   <button class="tab" data-tab="voice" aria-pressed="false">Voice</button>
   <button class="tab" data-tab="memory" aria-pressed="false">Memory</button>
   <button class="tab" data-tab="know" aria-pressed="false">Knowledge</button>
+  <button class="tab" data-tab="lab" aria-pressed="false">Lab</button>
   <button class="tab" data-tab="setup" aria-pressed="false">Setup</button>
 </nav>
 
@@ -249,6 +250,26 @@
     </div>
     <div id="kbList"></div>
     <p class="hint" id="kbStamp">Researched from Anthropic, OpenAI, Google and open-source sources on this build date. Fable 5.5 is pre-release: its entry updates the day anything official drops.</p>
+  </div>
+</section>
+
+<!-- ================= MODEL LAB ================= -->
+<section class="view" data-view="lab" aria-label="Model lab">
+  <div class="panel">
+    <div class="panel-head"><h2>Nicodiff on this phone <span class="muted">your own diffusion model, no API, no credits</span></h2></div>
+    <p class="hint" style="margin-top:0">This runs Nicodiff v0.1 (the model trained in your repo, 359,587 parameters, grade C1 PASS) fully inside this phone's browser: a 1.46 MB ONNX file, 60 denoising steps, pure local math. What it makes: tiny nebula worlds in our own style. What it is not: photoreal. That road is mapped (64x64, then your GPU).</p>
+    <button class="btn b-approve" id="labLoad" style="width:100%">load model into phone memory</button>
+    <p class="result muted" id="labStatus">model not loaded yet</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="flex:1;min-width:130px"><label class="muted" for="labSeed">seed</label>
+        <input id="labSeed" inputmode="numeric" placeholder="leave empty for random"></div>
+    </div>
+    <button class="btn b-approve" id="labGo" disabled style="width:100%">generate a world</button>
+    <div class="lab-stage"><canvas id="labCanvas" width="32" height="32"></canvas></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn" id="labAgain" disabled>another world</button>
+      <button class="btn b-approve" id="labSave" disabled>save to vault</button>
+    </div>
   </div>
 </section>
 
