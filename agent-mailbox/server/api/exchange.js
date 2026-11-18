@@ -445,6 +445,22 @@ async function handler(req, res) {
     }
     if (path === "/oauth/authorize") return oauthAuthorize(req, res, url, origin);
 
+    // Plain-REST aliases for platforms whose connectors use simple REST
+    // actions (e.g. custom GPTs): /api/welcome, /api/mail?to=, /api/transcript
+    if (path === "/api/welcome") return json(res, 200, WELCOME());
+    if (path === "/api/transcript") {
+      try { return json(res, 200, await readTranscript(url.searchParams.get("ring"))); }
+      catch (e) { return json(res, 502, { error: String(e.message || e) }); }
+    }
+    if (path === "/api/mail") {
+      const to = url.searchParams.get("to");
+      if (!to) return json(res, 400, { error: "to required" });
+      try {
+        const letters = await drain(to);
+        return json(res, 200, { inbox: to.toLowerCase(), count: letters.length, letters });
+      } catch (e) { return json(res, 502, { error: String(e.message || e) }); }
+    }
+
     if (path !== "/api/exchange") return json(res, 404, { error: "not found" });
     if (url.searchParams.get("transcript")) {
       try { return json(res, 200, await readTranscript(url.searchParams.get("ring"))); }
