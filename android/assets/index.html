@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agent Deck - run agents through your phone</title>
+<meta name="theme-color" content="#070B14">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">Agent <b>Deck</b></span>
+  </div>
+  <div class="topbar-stats">
+    <span class="stat"><span class="stat-label">Agent</span> <span id="whoami">not set</span></span>
+    <span class="stat"><span class="stat-label">Ring</span> <span id="ringStatus">offline</span></span>
+    <span class="stat"><span class="stat-label">Grants</span> <span class="tnum" id="grantCount">0</span></span>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Sections">
+  <button class="tab is-active" data-tab="jobs" aria-pressed="true">Jobs</button>
+  <button class="tab" data-tab="grants" aria-pressed="false">Grants</button>
+  <button class="tab" data-tab="capture" aria-pressed="false">Capture</button>
+  <button class="tab" data-tab="send" aria-pressed="false">Send</button>
+  <button class="tab" data-tab="doctor" aria-pressed="false">Doctor</button>
+  <button class="tab" data-tab="voice" aria-pressed="false">Voice</button>
+  <button class="tab" data-tab="memory" aria-pressed="false">Memory</button>
+  <button class="tab" data-tab="know" aria-pressed="false">Knowledge</button>
+  <button class="tab" data-tab="lab" aria-pressed="false">Lab</button>
+  <button class="tab" data-tab="care" aria-pressed="false">Care</button>
+  <button class="tab" data-tab="setup" aria-pressed="false">Setup</button>
+</nav>
+
+<main id="app">
+
+<!-- ================= JOBS ================= -->
+<section class="view is-active" data-view="jobs" aria-label="Agent jobs">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Job queue</h2>
+      <button class="btn" id="pollBtn">Check ring</button>
+    </div>
+    <p class="hint">Agents on the ring ask you for scoped help. Nothing runs until you tap approve. Jobs that would touch this phone are marked READ.</p>
+    <div id="jobList" class="joblist">
+      <p class="empty muted">No jobs yet. Jobs sent by agents as [JOB] letters appear here.</p>
+    </div>
+  </div>
+
+  <!-- local demo job so the flow is testable offline -->
+  <div class="panel">
+    <div class="panel-head"><h2>Local test <span class="muted">works without the ring</span></h2></div>
+    <div class="job" id="demoJob">
+      <header class="job-head">
+        <span class="job-from">demo agent</span>
+        <span class="job-scope">READ: one pasted note</span>
+        <span class="job-exp">clears on approve or deny</span>
+      </header>
+      <p class="job-what">"Read the note I paste and summarize it into one line."</p>
+      <div class="job-actions">
+        <button class="btn b-approve" id="demoApprove">&#10003; approve</button>
+        <button class="btn b-deny" id="demoDeny">&#10005; deny</button>
+      </div>
+      <div class="job-result muted" id="demoResult"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GRANTS ================= -->
+<section class="view" data-view="grants" aria-label="Active grants">
+  <div class="panel panel-danger">
+    <div class="panel-head">
+      <h2>Active grants</h2>
+      <button class="btn b-kill" id="killBtn">&#9889; KILL SWITCH</button>
+    </div>
+    <p class="hint">Every grant is one thing, for one agent, for a limited time. Default deny. Revoking deletes the grant from this phone immediately.</p>
+    <div id="grantList" class="grantlist"><p class="empty muted">No active grants.</p></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Log</h2><button class="btn b-ghost" id="clearLog">clear local log</button></div>
+    <ul id="eventLog" class="log"></ul>
+  </div>
+</section>
+
+<!-- ================= CAPTURE ================= -->
+<section class="view" data-view="capture" aria-label="Capture something to grant">
+  <div class="panel">
+    <div class="panel-head"><h2>Capture <span class="muted">each capture becomes a grantable packet</span></h2></div>
+    <div class="capture-grid">
+      <button class="cap" id="capPaste">
+        <b>Paste text</b><span>from your clipboard, on tap</span>
+      </button>
+      <button class="cap" id="capType">
+        <b>Type note</b><span>type or dictate into a box</span>
+      </button>
+      <button class="cap" id="capPhoto">
+        <b>One photo</b><span>camera opens only on tap; nothing leaves until you send</span>
+      </button>
+      <button class="cap" id="capFile">
+        <b>One file</b><span>you pick it in the file sheet</span>
+      </button>
+    </div>
+    <div class="packet hidden" id="packet">
+      <div class="panel-head"><h3>Packet ready</h3><span class="muted" id="packetMeta"></span></div>
+      <div id="packetBody" class="packet-body"></div>
+      <div class="send-row">
+        <label class="muted" for="grantAgent">grant to agent</label>
+        <input id="grantAgent" placeholder="claude" autocomplete="off" spellcheck="false">
+        <select id="grantTtl">
+          <option value="300">5 min</option>
+          <option value="3600">1 hour</option>
+          <option value="86400">1 day</option>
+        </select>
+        <button class="btn b-approve" id="packetSend">send packet</button>
+      </div>
+      <p class="hint">Text packets travel as a letter to that agent on the ring. Photo and file packets upload to an unlisted temporary file host: the link is only for the agent you name, expires by itself, and the grant log records it. Tap send only if you accept that.</p>
+    </div>
+  </div>
+  <input type="file" id="fileInput" class="hidden">
+</section>
+
+<!-- ================= SEND ================= -->
+<section class="view" data-view="send" aria-label="Send a letter or job">
+  <div class="panel">
+    <div class="panel-head"><h2>Compose to the ring</h2></div>
+    <label class="muted" for="toAgent">to agent</label>
+    <input id="toAgent" placeholder="claude" autocomplete="off" spellcheck="false">
+    <label class="muted" for="subj">subject</label>
+    <input id="subj" placeholder="JOB for you: summarize my note" autocomplete="off">
+    <label class="muted" for="msgBody">body</label>
+    <textarea id="msgBody" rows="7" placeholder="Write the letter. Prefix the subject with JOB to make it a job request with a scoped ask."></textarea>
+    <button class="btn b-approve" id="sendBtn" style="margin-top:12px">send letter</button>
+    <p class="result muted" id="sendResult"></p>
+  </div>
+</section>
+
+<!-- ================= PHONE DOCTOR ================= -->
+<section class="view" data-view="doctor" aria-label="Phone doctor">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Device report <span class="muted">read by your browser, no files leave</span></h2>
+      <button class="btn" id="docRun">scan</button>
+    </div>
+    <div id="docReport" class="packet-body muted">Tap scan to read this phone's hardware profile and storage.</div>
+    <div class="send-row" style="margin-top:12px">
+      <label class="muted" for="docAgent">send report to agent</label>
+      <input id="docAgent" placeholder="claude" spellcheck="false" autocomplete="off">
+      <button class="btn b-approve" id="docSend">send report</button>
+    </div>
+    <p class="hint" style="margin-top:10px">The report contains hardware numbers only (RAM tier, storage sizes, cores, battery). No photos, accounts or files.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Fixes <span class="muted">tap each step as you do it; progress saves on this phone</span></h2></div>
+    <ol class="doclist" id="docList"></ol>
+    <p class="doc-progress" id="docProgress"></p>
+  </div>
+</section>
+
+<!-- ================= VOICE + DAILY ================= -->
+<section class="view" data-view="voice" aria-label="Voice and daily runner">
+  <div class="panel">
+    <div class="panel-head"><h2>Voice control <span class="muted">tap the mic, speak a command</span></h2></div>
+    <button class="btn b-approve" id="micBtn" style="width:100%;padding:16px;font-size:16px">press and speak</button>
+    <div id="heard" class="packet-body muted">Nothing heard yet. Commands: “scan my phone”, “write a note …”, “remind me to …”, “check my jobs”, “open studio”.</div>
+    <p class="hint">Voice runs in this browser (Web Speech). It listens only while the page is open and you tapped the mic, works best on Chrome, needs internet. It cannot wake by itself like Siri and never listens in the background.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Daily runner <span class="muted">notes + reminders, saved on this phone</span></h2></div>
+    <label class="muted" for="noteIn">quick note</label>
+    <input id="noteIn" placeholder="idea, task, anything">
+    <button class="btn" id="noteAdd">save note</button>
+    <label class="muted" for="remText">reminder</label>
+    <input id="remText" placeholder="call back the client">
+    <label class="muted" for="remIn">when</label>
+    <input id="remIn" type="datetime-local">
+    <button class="btn" id="remAdd">set reminder</button>
+    <div id="dailyList" class="packet-body muted">No notes or reminders yet.</div>
+    <p class="hint">Reminders fire while this page is open: the phone vibrates and the deck speaks. A web page cannot ring an alarm while closed. For alarms that must wake the phone, use the Clock app, or brief an agent on the ring.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>One-tap apps</h2></div>
+    <div class="capture-grid">
+      <button class="cap" id="goStudio"><b>Nico Gen Studio</b><span>generate a video right in this browser, no API</span></button>
+      <button class="cap" id="goReply"><b>Reply drafter</b><span>drafts the reply; you paste and press send</span></button>
+    </div>
+    <label class="muted" for="studioUrl" style="margin-top:12px">Studio URL</label>
+    <input id="studioUrl" placeholder="https://your-studio-deployment.tmp.now">
+    <p class="hint">Honest limits: a web page cannot press send inside WhatsApp or control other apps on the phone. The deck drafts, you confirm. Real automation of other apps needs a native Android app; that is the next tier and we can blueprint it.</p>
+  </div>
+</section>
+
+<!-- ================= MEMORY VAULT ================= -->
+<section class="view" data-view="memory" aria-label="Memory vault">
+  <div class="panel">
+    <div class="panel-head"><h2>Phone vault <span class="muted" id="vaultUsage">large mid-term memory, on this phone</span></h2></div>
+    <div class="capture-grid">
+      <button class="cap" id="vaultAdd"><b>Save a file</b><span>pick any file; it is stored in the vault on this phone</span></button>
+      <button class="cap" id="vaultPersist"><b>Lock vault</b><span>ask the browser to never evict the vault automatically</span></button>
+    </div>
+    <input type="file" id="vaultFile" class="hidden" multiple>
+    <div id="vaultList" class="packet-body muted">Vault is empty. Saved files survive refreshes and restarts.</div>
+    <p class="hint">The vault uses IndexedDB: hundreds of megabytes to gigabytes depending on your free space. It is your private long-term memory, but a browser can still be cleared (app deletion, browsing-data wipe). For eternity, archive to the GitHub vault below: it is free, permanent and versioned.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>GitHub vault for eternity <span class="muted">free, permanent, versioned</span></h2></div>
+    <label class="muted" for="ghRepo">repository</label>
+    <input id="ghRepo" placeholder="reezdigital1-svg/ReezDigital" spellcheck="false" autocomplete="off">
+    <label class="muted" for="ghToken">GitHub token (fine-grained, only this repo, contents read + write)</label>
+    <input id="ghToken" type="password" placeholder="paste once; it lives on this phone only" spellcheck="false" autocomplete="off">
+    <button class="btn b-approve" id="ghSave">save vault keys</button>
+    <button class="btn" id="ghSync">archive all to GitHub</button>
+    <p class="result muted" id="ghResult"></p>
+    <p class="hint">Files are pushed to a deck-vault folder in your own repository through the official GitHub API. The token is stored only on this phone and is used only for that folder. Create the token at GitHub Settings, Developer settings, Fine-grained tokens, and limit it to this one repository. If you ever lose the phone, revoke the token in one click.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Free AI, working for you</h2></div>
+    <div class="capture-grid">
+      <button class="cap" id="aiStudio"><b>Nico Gen Studio</b><span>video generation, free forever, no API</span></button>
+      <button class="cap" id="aiRing"><b>Ring agents</b><span>jobs: any agent on your exchange, free</span></button>
+    </div>
+    <p class="hint">Honest picture of all AI models for free: nothing forces every company to open every model, so nobody can truly promise you all of them. What we can promise: everything we OWN stays free (Studio, Nicodiff, the Exchange ring, this deck) and everything we USE has a free door (Mixkit, Coverr, uguu, GitHub, Vercel hobby, open-weight models on your machine). When a paid model ever beats a free one for your work it stays your call, like Higgsfield credits were.</p>
+  </div>
+</section>
+
+<!-- ================= AI MODEL KNOWLEDGE ================= -->
+<section class="view" data-view="know" aria-label="AI model knowledge">
+  <div class="panel">
+    <div class="panel-head"><h2>AI model knowledge <span class="muted">verified facts, offline on this phone</span></h2></div>
+    <input id="kbSearch" placeholder="search: fable, gemini, free video, pricing...">
+    <div class="kb-chips" id="kbChips">
+      <button class="chip is-on" data-cat="all">all</button>
+      <button class="chip" data-cat="claude">claude</button>
+      <button class="chip" data-cat="openai">openai</button>
+      <button class="chip" data-cat="google">google</button>
+      <button class="chip" data-cat="open">open weights</button>
+      <button class="chip" data-cat="media">image + video</button>
+      <button class="chip" data-cat="ours">ours</button>
+      <button class="chip" data-cat="free">free paths</button>
+    </div>
+    <div id="kbList"></div>
+    <p class="hint" id="kbStamp">Researched from Anthropic, OpenAI, Google and open-source sources on this build date. Fable 5.5 is pre-release: its entry updates the day anything official drops.</p>
+  </div>
+</section>
+
+<!-- ================= MODEL LAB ================= -->
+<section class="view" data-view="lab" aria-label="Model lab">
+  <div class="panel">
+    <div class="panel-head"><h2>Nicodiff on this phone <span class="muted">your own diffusion model, no API, no credits</span></h2></div>
+    <p class="hint" style="margin-top:0">This runs Nicodiff v0.1 (the model trained in your repo, 359,587 parameters, grade C1 PASS) fully inside this phone's browser: a 1.46 MB ONNX file, 60 denoising steps, pure local math. What it makes: tiny nebula worlds in our own style. What it is not: photoreal. That road is mapped (64x64, then your GPU).</p>
+    <button class="btn b-approve" id="labLoad" style="width:100%">load model into phone memory</button>
+    <p class="result muted" id="labStatus">model not loaded yet</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="flex:1;min-width:130px"><label class="muted" for="labSeed">seed</label>
+        <input id="labSeed" inputmode="numeric" placeholder="leave empty for random"></div>
+    </div>
+    <button class="btn b-approve" id="labGo" disabled style="width:100%">generate a world</button>
+    <div class="lab-stage"><canvas id="labCanvas" width="32" height="32"></canvas></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn" id="labAgain" disabled>another world</button>
+      <button class="btn b-approve" id="labSave" disabled>save to vault</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CARE (native bridge) ================= -->
+<section class="view" data-view="care" aria-label="Phone care">
+  <div class="panel">
+    <div class="panel-head"><h2>Phone care <span class="muted" id="careMode">checking app mode...</span></h2></div>
+    <div id="careDevice" class="packet-body muted">Loading real device numbers from Android itself.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn b-approve" id="careFreeRam">free RAM now</button>
+      <button class="btn" id="careStorage">open storage settings</button>
+      <button class="btn" id="careMemory">open RAM expansion settings</button>
+    </div>
+    <p class="hint">free RAM uses Android\u2019s own background-app trimming, the same one your phone\u2019s device care uses. The RAM expansion button jumps straight to the settings screen where your phone hides \u201cRAM Plus\u201d or \u201cMemory extension\u201d.</p>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>All my apps <span class="muted">open, freeze, inspect</span></h2></div>
+    <input id="careAppSearch" placeholder="search installed apps...">
+    <div id="careApps" class="packet-body muted">Loading the app list from the phone.</div>
+    <p class="hint">open launches the app. freeze asks Android to stop its background processes: the honest fix for a misbehaving app before uninstalling. inspect opens Android\u2019s own App Info where the cache-clear and uninstall buttons live.</p>
+  </div>
+</section>
+
+<!-- ================= SETUP ================= -->
+<section class="view" data-view="setup" aria-label="Setup">
+  <div class="panel">
+    <div class="panel-head"><h2>Connect</h2></div>
+    <label class="muted" for="myName">this phone's agent name</label>
+    <input id="myName" placeholder="phone (or your name)" spellcheck="false" autocomplete="off">
+    <label class="muted" for="ringUrl">exchange URL</label>
+    <input id="ringUrl" placeholder="https://zippy-nova-m44b5ul.tmp.now" spellcheck="false" autocomplete="off">
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn b-approve" id="saveSetup">save</button>
+      <button class="btn b-ghost" id="testSetup">test ring</button>
+    </div>
+    <p class="result muted" id="setupResult"></p>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>What this phone can and cannot do</h2></div>
+    <ul class="limits muted">
+      <li><b>Can:</b> receive jobs from any ring agent; grant scoped one-time reads (pasted text, typed note, one photo, one file) that run only on your tap; auto-expire grants; keep local logs; hard revoke all.</li>
+      <li><b>Cannot:</b> read your messages, contacts or files unseen. A browser page gets nothing except what you hand it through a tap. That is by design.</li>
+      <li><b>Next tier:</b> a native app (Android APK) could add share-target automation and background job checks, still behind approve taps.</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Install on your home screen</h2></div>
+    <p class="limit muted">Android: Chrome menu, then "Add to Home screen". iPhone: Safari share button, then "Add to Home Screen". The deck then opens full screen like an app.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <p>Agent Deck, by Nico AI Studio. Default deny, scoped grants, kill switch first. No agent reads this phone without a tap you chose.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
