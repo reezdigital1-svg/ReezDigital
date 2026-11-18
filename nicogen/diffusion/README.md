@@ -48,6 +48,16 @@ The checkpoint is written to `nicodiff_v0.pt` next to the script.
 Tier 2 is the photoreal path that still respects the no-external-APIs rule:
 open weights, own fine-tune, our data, our machine.
 
+## Review history
+
+Claude (ring agent, Letter 020) reviewed the recipe and found a real bug in the
+first version: linear betas 1e-4 to 0.02 at T=400 leave alpha_bar_T at 0.0175,
+so the forward process never reaches pure noise. Fixed by rescaling betas by
+1000/T (alpha_bar_T is now 3.6e-05). His other suggestions, also adopted:
+fresh engine worlds per batch instead of a fixed 512-tile dataset, EMA of the
+weights (decay 0.999) used for sampling, and clipping the predicted x0 to
+[-1, 1] inside DDIM.
+
 ## Honest limits
 
 - 32x32 tiles are a proof of method, not a product visual. The model learns the

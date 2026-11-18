@@ -152,21 +152,40 @@ class TinyUNet(nn.Module):
 
 
 # -------------------------------------------------------------------- ddpm
-BETAS = torch.linspace(1e-4, 0.02, TIMESTEPS, dtype=torch.float64)
+# Claude (Letter 020) flagged that linear 1e-4..0.02 at T=400 leaves
+# alpha_bar_T = 0.0175, so the process never reaches pure noise. The
+# standard DDPM betas are for T=1000; rescale by 1000/T:
+#   rescaled alpha_bar_T = 3.6e-05 (signal amplitude 0.006). VERIFIED.
+BETAS = torch.linspace(1e-4, 0.02, TIMESTEPS, dtype=torch.float64) * (1000.0 / TIMESTEPS)
 ALPHAS = torch.cumprod(1.0 - BETAS, 0)
 AB = ALPHAS.float()[None, :, None, None]
 
 
-def train(steps=1500, minutes=None, bs=32):
+def train(steps=1500, minutes=None, bs=32, fresh_data=True):
     os.makedirs(OUT, exist_ok=True)
-    data = torch.from_numpy(dataset(512))
-    print(f"data: {tuple(data.shape)} in [{data.min():.2f},{data.max():.2f}]", flush=True)
+    data = None
+    if fresh_data:
+        # Claude L020: avoid the fixed-512 memorization question entirely by
+        # generating fresh engine worlds every step. Our engine is the
+        # generator, so unlimited unique tiles are free.
+        base_seed = int(time.time()) % 900000 + 17
+        data = torch.from_numpy(dataset(bs * 4, seed=base_seed))
+        def refill():
+            return torch.from_numpy(dataset(bs * 4, seed=base_seed + int(time.time()) % 100000 + 1))
+        print(f"data: FRESH worlds per refill, 32x32", flush=True)
+    else:
+        data = torch.from_numpy(dataset(512))
+    print(f"alpha_bar at T: {ALPHAS[-1].item():.6f} (signal amp {ALPHAS[-1].item()**0.5:.4f})", flush=True)
     unet = TinyUNet().to(DEV)
     nparams = sum(p.numel() for p in unet.parameters())
     print(f"unet params: {nparams/1e6:.2f}M", flush=True)
     opt = torch.optim.AdamW(unet.parameters(), lr=2e-4)
+    ema = {k: v.clone().detach() for k, v in unet.state_dict().items()}
+    EMA_D = 0.999
     t0 = time.time()
     for step in range(1, steps + 1):
+        if fresh_data and step % 128 == 0:
+            data = refill()
         idx = torch.randint(0, data.shape[0], (bs,))
         x0 = data[idx].to(DEV)
         t = torch.randint(0, TIMESTEPS, (bs,), device=DEV)
@@ -179,20 +198,26 @@ def train(steps=1500, minutes=None, bs=32):
         loss.backward()
         torch.nn.utils.clip_grad_norm_(unet.parameters(), 1.0)
         opt.step()
+        with torch.no_grad():
+            for k, v in unet.state_dict().items():
+                ema[k].mul_(EMA_D).add_(v.detach(), alpha=1.0 - EMA_D)
         if step % 100 == 0:
             print(f"step {step:5d}  loss {loss.item():.4f}  {(time.time()-t0):.0f}s", flush=True)
         if minutes and (time.time() - t0) / 60.0 > minutes:
             print(f"timebox of {minutes} min reached at step {step}", flush=True)
             break
-    torch.save(unet.state_dict(), CKPT)
-    print(f"saved {CKPT}", flush=True)
+    torch.save({"model": unet.state_dict(), "ema": ema}, CKPT)
+    print(f"saved {CKPT} (model + EMA)", flush=True)
 
 
 @torch.no_grad()
 def sample(n=8, ckpt=None, steps=60):
     ckpt = ckpt or CKPT
     unet = TinyUNet().to(DEV)
-    unet.load_state_dict(torch.load(ckpt, map_location=DEV))
+    sd = torch.load(ckpt, map_location=DEV)
+    if isinstance(sd, dict) and "ema" in sd:
+        sd = sd["ema"]
+    unet.load_state_dict(sd)
     unet.eval()
     x = torch.randn(n, CH, IMG, IMG, device=DEV)
     ts = torch.linspace(TIMESTEPS - 1, 0, steps).long()
@@ -202,7 +227,7 @@ def sample(n=8, ckpt=None, steps=60):
         eps = unet(x, tb)
         ab_t = ALPHAS.to(DEV).float()[t].view(1, 1, 1, 1)
         x0 = (x - (1.0 - ab_t).sqrt() * eps) / ab_t.sqrt()
-        x0 = x0.clamp(-1.6, 1.6)
+        x0 = x0.clamp(-1.0, 1.0)  # Claude L020: clip predicted x0 inside DDIM
         if i < steps - 1:
             ab_n = ALPHAS.to(DEV).float()[int(ts[i + 1])].view(1, 1, 1, 1)
             x = ab_n.sqrt() * x0 + (1.0 - ab_n).sqrt() * eps
