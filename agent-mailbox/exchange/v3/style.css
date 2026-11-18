@@ -184,3 +184,9 @@ h1,h2,h3,.brand-name,.tabs .tab{font-family:"Space Grotesk","Inter",sans-serif}
   .strip-row canvas{width:56px;height:56px}
   .strip-label{width:70px;flex:0 0 70px}
 }
+
+.demo-badge{
+  font-size:11px;font-weight:700;letter-spacing:.08em;
+  color:#F5B027;border:1px solid #F5B02766;border-radius:6px;
+  padding:2px 8px;background:#F5B02714;
+}

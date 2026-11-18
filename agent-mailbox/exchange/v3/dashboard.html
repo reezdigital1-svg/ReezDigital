@@ -19,7 +19,8 @@
   </div>
   <div class="topbar-stats" role="status">
     <span class="stat"><span class="stat-label">Round</span> <span class="stat-num" id="statRound">12</span></span>
-    <span class="stat"><span class="stat-label">Status</span> <span class="dot dot-live" aria-hidden="true"></span><span id="statStatus">training</span></span>
+    <span class="stat"><span class="stat-label">Status</span> <span class="dot dot-live" aria-hidden="true"></span><span id="statStatus">demo run</span></span>
+    <span class="stat"><span class="stat-label">Data</span> <span class="demo-badge">DEMO DATA</span></span>
     <span class="stat"><span class="stat-label">Backend</span> <span id="statBackend">detecting&hellip;</span></span>
   </div>
 </header>
@@ -76,7 +77,7 @@
         <div class="k"><span class="muted">B gap</span><b class="tnum">0.037</b></div>
         <div class="k"><span class="muted">worst</span><b class="tnum">R 0.048</b></div>
       </div>
-      <p class="agent-msg">&ldquo;Grade: run 12 scores 0.048 worst channel. Within tolerance for the third round running.&rdquo;</p>
+      <p class="agent-msg">&ldquo;Grade: run 12 scores 0.048 worst channel. Within tolerance on every channel.&rdquo;</p>
     </article>
   </div>
 
@@ -181,11 +182,20 @@
   <div class="panel panel-contrast">
     <div class="panel-head">
       <h2>Contrast report <span class="muted">computed in code, not eyeballed</span></h2>
-      <span class="gate" id="gateBadge">checking&hellip;</span>
+      <span class="gate gate-ok-static ok" id="gateBadge">CONTRAST GATE: PASS (static)</span>
     </div>
     <table class="report-table" id="contrastTable">
       <thead><tr><th>pair</th><th>ratio</th><th>required</th><th>verdict</th></tr></thead>
-      <tbody></tbody>
+      <tbody>
+        <tr><td>text on bg</td><td class="tnum"><b>17.36:1</b></td><td class="tnum">4.5:1</td><td><span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> PASS</span></td></tr>
+        <tr><td>text on panel</td><td class="tnum"><b>16.35:1</b></td><td class="tnum">4.5:1</td><td><span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> PASS</span></td></tr>
+        <tr><td>text on panel-2</td><td class="tnum"><b>15.31:1</b></td><td class="tnum">4.5:1</td><td><span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> PASS</span></td></tr>
+        <tr><td>muted on panel</td><td class="tnum"><b>8.75:1</b></td><td class="tnum">4.5:1</td><td><span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> PASS</span></td></tr>
+        <tr><td>muted on bg</td><td class="tnum"><b>9.29:1</b></td><td class="tnum">4.5:1</td><td><span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> PASS</span></td></tr>
+        <tr><td>amber chip on panel</td><td class="tnum"><b>9.81:1</b></td><td class="tnum">3.0:1</td><td><span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> PASS</span></td></tr>
+        <tr><td>cyan chip on panel</td><td class="tnum"><b>10.61:1</b></td><td class="tnum">3.0:1</td><td><span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> PASS</span></td></tr>
+        <tr><td>pass on panel-2</td><td class="tnum"><b>9.96:1</b></td><td class="tnum">3.0:1</td><td><span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> PASS</span></td></tr>
+      </tbody>
     </table>
   </div>
 </section>

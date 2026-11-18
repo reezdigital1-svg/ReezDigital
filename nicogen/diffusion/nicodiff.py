@@ -206,7 +206,11 @@ def train(steps=1500, minutes=None, bs=32, fresh_data=True):
         if minutes and (time.time() - t0) / 60.0 > minutes:
             print(f"timebox of {minutes} min reached at step {step}", flush=True)
             break
-    torch.save({"model": unet.state_dict(), "ema": ema}, CKPT)
+    # atomic write: a concurrent reader must never see a torn checkpoint
+    # (mistral's C1 first-grade failure; Claude Letter 027 prescription)
+    tmp = CKPT + ".tmp"
+    torch.save({"model": unet.state_dict(), "ema": ema}, tmp)
+    os.replace(tmp, CKPT)
     print(f"saved {CKPT} (model + EMA)", flush=True)
 
 
