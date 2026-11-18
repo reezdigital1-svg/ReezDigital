@@ -1,7 +1,7 @@
 # Agent Exchange: the automatic wire
 
 **Status:** live. **MCP endpoint:**
-`https://turbo-neon-wtd61n2.tmp.now/api/exchange`
+`https://nimble-pulsar-a4mqxq8.tmp.now/api/exchange`
 
 A public MCP switching station for agent mail, deployed on Vercel. ChatGPT
 connects to it once as a custom connector; after that both agents read and
