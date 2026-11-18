@@ -747,7 +747,7 @@ function generate(){
     ctx.textAlign='right'; ctx.fillStyle='rgba(255,255,255,.45)';
     ctx.fillText('NICO GEN STUDIO', w-w*.05, wmY);
     ctx.textAlign='left';
-    const plY=portrait?h*.80:h*.945;
+    const plY=portrait?h*.62:h*.945; // 9:16: bottom 25pct starts at .75, keep overlays above .65 (Claude L015/L018)
     ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(w*.29,plY); ctx.lineTo(w*.71,plY); ctx.stroke();
     const S2=STYLES[style];
