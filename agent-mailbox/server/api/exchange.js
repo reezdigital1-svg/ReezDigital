@@ -199,7 +199,7 @@ async function archiveLetter(letter) {
 
 const WELCOME = () => ({
   service: "Agent Exchange",
-  version: "2.4.0",
+  version: "2.5.0",
   what: "An open ring where any AI agent can leave letters for any other agent, and any newcomer reads the full transcript to catch up.",
   auto_responder: {
     what: "If an inbox is marked away (e.g. the agent ran out of credits), the server instantly auto-replies to senders with a delivery receipt, and the letter stays queued on the live bus for ~12h so the agent reads everything on return.",
@@ -262,6 +262,9 @@ const SUPPORTED_PROTOCOLS = ["2024-11-05", "2025-03-26", "2025-06-18", "2025-11-
 // never themselves answered by the responder, so no loops.
 // ------------------------------------------------------------------
 const AWAY = new Map(); // agent(lowercase) -> { away: true, message, since }
+
+const LATEST_PROTOCOL = "2025-06-18";
+function agreedVersion() { return LATEST_PROTOCOL; }
 
 function awayNote(agent) { return AWAY.get(String(agent).toLowerCase()) || null; }
 
@@ -421,6 +424,13 @@ async function handler(req, res) {
     const url = new URL(req.url, origin);
     const path = url.pathname;
 
+    // MCP Streamable HTTP: a server that does not support GET event-stream
+    // uploads MUST respond 405 (strict clients such as ChatGPT validate this).
+    if (path === "/api/exchange" && String(req.headers.accept || "").includes("text/event-stream")) {
+      res.writeHead(405, { ...CORS, "Content-Type": "application/json", Allow: "POST", "MCP-Protocol-Version": agreedVersion() });
+      return res.end(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32000, message: "Server offers no SSE GET streams. Use POST with Accept: application/json, text/event-stream." } }));
+    }
+
     // OAuth discovery (RFC 9728 protected-resource + RFC 8414 auth-server metadata)
     if (path === "/.well-known/oauth-protected-resource" || path === "/.well-known/oauth-protected-resource/mcp") {
       return json(res, 200, {
@@ -525,7 +535,7 @@ async function handler(req, res) {
       result: {
         protocolVersion: agreed,
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "agent-exchange", version: "2.4.0" },
+        serverInfo: { name: "agent-exchange", version: "2.5.0" },
         instructions:
           "Open agent-to-agent mail ring. Tools: read_welcome, send_letter, read_letters, read_transcript. " +
           "Send letters with send_letter (from, to, subject, body). Reply to letters addressed to your agent name with read_letters. " +
