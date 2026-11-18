@@ -81,7 +81,9 @@ $("clearLog").addEventListener("click",()=>{state.log=[];LS.setItem("adeck.log",
 /* ---------- setup ---------- */
 $("myName").value=state.cfg.name; $("ringUrl").value=state.cfg.ring;
 $("saveSetup").addEventListener("click",()=>{
+  const studio=state.cfg.studio||"";
   state.cfg={name:$("myName").value.trim()||"phone", ring:$("ringUrl").value.trim().replace(/\/$/,"")};
+  if(studio) state.cfg.studio=studio; // studio URL survives setup edits
   LS.setItem("adeck.cfg",JSON.stringify(state.cfg));
   $("whoami").textContent=state.cfg.name;
   $("setupResult").textContent="saved. test the ring, then check jobs.";
@@ -265,7 +267,250 @@ $("sendBtn").addEventListener("click",async()=>{
   }catch(e){$("sendResult").textContent="failed: "+e.message}
 });
 
+/* ---------- phone doctor: honest device report + guided fixes ---------- */
+/* A web page can only READ what the browser exposes and GUIDE. It cannot run
+   repairs, change system settings, or add physical RAM/ROM. Say so, always. */
+
+const CHECKS=[
+  {t:"Turn on RAM expansion (virtual RAM)",
+   d:"Settings, search \u201cmemory extension\u201d / \u201cRAM expansion\u201d / \u201cvirtual RAM\u201d. Samsung: Device care > Memory > RAM Plus. Xiaomi: Additional settings > Memory extension. Infinix/Tecno: XOS/HI-OS memory settings. This borrows storage as extra RAM. It helps background apps survive, it is not new physical hardware."},
+  {t:"Free storage to at least 10 percent free",
+   d:"Settings > Storage. Delete old downloads, duplicate videos and unused apps. 'App is not responding' is most often a phone with almost no free storage."},
+  {t:"Clear the cache of the app that freezes",
+   d:"Settings > Apps > [the app] > Storage > Clear cache. Do not press Clear data unless you accept losing the app's saved sign-ins."},
+  {t:"Update the freezing app",
+   d:"Play Store or App Store > search the app > Update. Old app versions against a newer OS is a classic freezing cause."},
+  {t:"Check for a pending system update",
+   d:"Settings > System > System update. Builders patch freeze bugs constantly."},
+  {t:"Restart in Safe Mode and test the app",
+   d:"Hold power > long-press \u201cPower off\u201d > tap OK for Safe Mode. If the app stops freezing there, a third-party app is the cause. Hold power > Restart to leave Safe Mode."},
+  {t:"Update Android System WebView / Chrome",
+   d:"Play Store > search \u201cAndroid System WebView\u201d > Update. WebView crashes freeze many apps that show web content."},
+  {t:"Clear all apps from recents + restart once a week",
+   d:"Recents button > Clear all. Then restart. Phones that never restart accumulate memory-hogging zombies."},
+  {t:"Last resort: back up, then factory reset",
+   d:"Settings > System > Reset. Only after backing up photos and accounts. This is the honest end of the software road."},
+  {t:"If freezes continue after all of the above",
+   d:"Then it is hardware: worn storage or insufficient RAM for the OS version. No web page can fix that. A repair shop is the honest end. A lighter Launcher and Go-edition app set lowers memory pressure instead."}
+];
+
+const LS_CHECKS="adeck.checks";
+function loadChecks(){try{return JSON.parse(LS.getItem(LS_CHECKS)||"[]")}catch(e){return[]}}
+function saveChecks(v){LS.setItem(LS_CHECKS,JSON.stringify(v))}
+
+function renderDocList(){
+  const done=loadChecks(), ol=$("docList");
+  ol.innerHTML="";
+  CHECKS.forEach((c,i)=>{
+    const li=document.createElement("li");
+    if(done.includes(i)) li.classList.add("done");
+    li.innerHTML='<span class="dcb">\u2713</span><span class="dtxt">'+esc(c.t)+'<small>'+esc(c.d)+'</small></span>';
+    li.addEventListener("click",()=>{
+      const v=loadChecks(), at=v.indexOf(i);
+      if(at>=0){v.splice(at,1)}else{v.push(i)}
+      saveChecks(v); renderDocList();
+      slog((at>=0?"fix step undone: ":"fix step done: ")+c.t);
+      docProgress();
+    });
+    ol.appendChild(li);
+  });
+  docProgress();
+}
+function docProgress(){
+  const n=loadChecks().length, p=$("docProgress");
+  if(p) p.innerHTML="<b>"+n+"</b> of "+CHECKS.length+" steps done. Progress saves on this phone only.";
+}
+
+let docReportText="";
+async function runDocScan(){
+  const out=$("docReport");
+  out.classList.remove("muted");
+  out.textContent="reading this phone\u2026";
+  const lines=[];
+  const nav=navigator;
+  lines.push("AGENT DECK DEVICE REPORT (hardware numbers only)");
+  lines.push("generated: "+now());
+  if(nav.deviceMemory!==undefined){
+    lines.push("ram_tier_gb: "+nav.deviceMemory+" (browser rounds DOWN to a power of 2, so a 6GB phone reports 4)");
+  }else{lines.push("ram_tier_gb: not exposed by this browser")}
+  try{
+    const est=await nav.storage.estimate();
+    const gb=x=>(x/1073741824).toFixed(2);
+    lines.push("storage_used_gb: "+gb(est.usage||0));
+    lines.push("storage_quota_gb: "+gb(est.quota||0)+" (origin quota, not the SD card size)");
+    if(est.usageDetails) lines.push("storage_detail: "+JSON.stringify(est.usageDetails));
+  }catch(e){lines.push("storage: not exposed")}
+  try{if(nav.storage.persist) lines.push("storage_persisted: "+await nav.storage.persist())}catch(e){}
+  lines.push("cpu_cores: "+(nav.hardwareConcurrency||"not exposed"));
+  lines.push("online: "+nav.onLine);
+  lines.push("screen: "+screen.width+"x"+screen.height+" @ devicePixelRatio "+(window.devicePixelRatio||1));
+  try{
+    if(nav.getBattery){
+      const b=await nav.getBattery();
+      lines.push("battery: "+Math.round(b.level*100)+"% "+(b.charging?"charging":"on battery"));
+    }else{lines.push("battery: not exposed by this browser")}
+  }catch(e){lines.push("battery: not exposed")}
+  const ua=nav.userAgent||"";
+  const plat=/Android/i.test(ua)?"Android":/iPhone|iPad/i.test(ua)?"iOS":/Win/i.test(ua)?"Windows":/Mac/i.test(ua)?"macOS":/Linux/i.test(ua)?"Linux":"unknown";
+  lines.push("platform: "+plat);
+  lines.push("language: "+nav.language);
+  lines.push("note: browser cannot read total physical RAM/ROM. For exact sizes: Settings > About phone > Hardware information. Paste those numbers into a letter if an agent asks.");
+  docReportText=lines.join("\n");
+  out.textContent=docReportText;
+  slog("device report generated: "+docReportText.split("\n").length+" lines, no personal data");
+}
+
+$("docRun").addEventListener("click",runDocScan);
+
+$("docSend").addEventListener("click",async()=>{
+  if(!docReportText){alert2("tap scan first, then send the report");return}
+  const agent=($("docAgent").value||"").trim();
+  if(!agent){alert2("name the agent to receive the report");return}
+  if(!state.cfg.ring){alert2("set the exchange URL in Setup first");return}
+  const btn=$("docSend");
+  btn.disabled=true; btn.textContent="sending\u2026";
+  try{
+    await api({op:"send",from:state.cfg.name||"phone",to:agent,
+      subject:"[PKT] device report",
+      body:"SCOPED GRANT PACKET\nkind: device report (hardware numbers only)\n\n"+docReportText});
+    newGrant(agent,"READ: device report",300);
+    slog("device report sent to "+agent+", grant 300s");
+  }catch(e){alert2("send failed: "+e.message)}
+  btn.disabled=false; btn.textContent="send report";
+  renderGrants();
+});
+
+/* ---------- voice + daily runner ---------- */
+/* Honest tier: the page listens only after a tap, drafts replies, keeps notes and
+   reminders, and opens apps by URL. It cannot control other apps like a native assistant. */
+
+const LS_DAILY="adeck.daily";
+function loadDaily(){try{return JSON.parse(LS.getItem(LS_DAILY)||"{\"notes\":[],\"rems\":[]}")}catch(e){return{notes:[],rems:[]}}}
+function saveDaily(d){LS.setItem(LS_DAILY,JSON.stringify(d))}
+
+function speak(t){
+  try{const u=new SpeechSynthesisUtterance(t);u.rate=1;speechSynthesis.speak(u)}catch(e){}
+}
+function showHeard(t,cls){
+  const h=$("heard"); h.classList.toggle("muted",!cls);
+  h.textContent=t;
+}
+
+function renderDaily(){
+  const d=loadDaily(), el=$("dailyList");
+  if(!d.notes.length&&!d.rems.length){el.textContent="No notes or reminders yet.";el.classList.add("muted");return}
+  el.classList.remove("muted");
+  const rows=["NOTES"]; d.notes.slice(0,30).forEach((n,i)=>rows.push((i+1)+". "+n.text+"  ("+n.ts+")"));
+  rows.push("","REMINDERS");
+  d.rems.slice().sort((a,b)=>a.at-b.at).forEach(r=>rows.push(new Date(r.at).toLocaleString()+"  "+r.text+(r.fired?"  [fired]":"")));
+  el.textContent=rows.join("\n");
+}
+function addNote(text){
+  const d=loadDaily(); d.notes.unshift({ts:now(),text}); d.notes=d.notes.slice(0,100);
+  saveDaily(d); renderDaily(); slog("note saved: "+text.slice(0,50));
+}
+function addReminder(text,at){
+  const d=loadDaily(); d.rems.push({text,at}); saveDaily(d); renderDaily();
+  slog("reminder set for "+new Date(at).toLocaleString());
+}
+
+/* reminder checks while the page is open */
+setInterval(()=>{
+  const d=loadDaily(); let did=false;
+  d.rems.forEach(r=>{
+    if(!r.fired&&r.at<=Date.now()){
+      r.fired=true; did=true;
+      try{navigator.vibrate&&navigator.vibrate([300,120,300])}catch(e){}
+      speak("Reminder: "+r.text);
+      alert2("REMINDER: "+r.text);
+    }
+  });
+  if(did){saveDaily(d);renderDaily()}
+},20000);
+
+$("noteAdd").addEventListener("click",()=>{
+  const v=$("noteIn").value.trim(); if(!v)return alert2("type the note first");
+  addNote(v); $("noteIn").value="";
+});
+$("remAdd").addEventListener("click",()=>{
+  const t=$("remText").value.trim(), at=$("remIn").value;
+  if(!t||!at)return alert2("reminder needs text and a time");
+  addReminder(t,new Date(at).getTime()); $("remText").value="";
+});
+
+/* studio launcher + reply drafter */
+$("goStudio").addEventListener("click",()=>{
+  let url=(state.cfg.studio||"").trim();
+  if(!url){url=prompt("Paste your Nico Gen Studio URL once; it saves:")||""; if(!url)return; state.cfg.studio=url; saveSetup(); $("studioUrl")&&($("studioUrl").value=url);}
+  window.open(url,"_blank"); slog("opened Nico Gen Studio");
+});
+$("goReply").addEventListener("click",()=>{
+  const pool=loadDaily().notes.map(n=>n.text);
+  const last=pool[0]||"";
+  const draft="Thanks for your message! I saw it. I will get back to you properly"+(last?". Quick note for myself: "+last:".");
+  const to=prompt("Paste this draft into the chat. Say OK if you also want it copied:",draft);
+  if(to){
+    try{navigator.clipboard.writeText(draft);slog("reply draft copied to clipboard")}
+    catch(e){slog("copy blocked; draft shown in prompt")}
+  }
+});
+$("studioUrl").addEventListener("change",e=>{
+  state.cfg.studio=e.target.value.trim(); saveSetup(); slog("studio URL saved");
+});
+
+/* voice recognition */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null, listening=false;
+if(!SR){
+  $("micBtn").disabled=true; $("micBtn").textContent="voice not supported in this browser";
+  showHeard("This browser has no Web Speech. Use Chrome on Android for voice.",false);
+}else{
+  rec=new SR(); rec.lang=navigator.language||"en-US"; rec.interimResults=true; rec.maxAlternatives=1;
+  rec.onstart=()=>{listening=true;$("micBtn").textContent="listening\u2026 tap to stop";showHeard("listening\u2026",false)};
+  rec.onresult=e=>{
+    let fin="",raw="";
+    for(const r of e.results){raw+=r[0].transcript; if(r.isFinal)fin=r[0].transcript}
+    showHeard("heard: "+(fin||raw),!!fin);
+    if(fin) runIntent(fin.trim());
+  };
+  rec.onerror=e=>{listening=false;$("micBtn").textContent="press and speak";showHeard("voice error: "+e.error,false)};
+  rec.onend=()=>{listening=false;$("micBtn").textContent="press and speak"};
+}
+$("micBtn").addEventListener("click",()=>{
+  if(!rec)return;
+  if(listening){rec.stop();return}
+  try{rec.start()}catch(e){/* already started */}
+});
+
+function switchTab(name){
+  const t=document.querySelector('[data-tab="'+name+'"]'); if(t)t.click();
+}
+function runIntent(say){
+  const s=say.toLowerCase();
+  if(/scan|report|about my phone|diagnos/.test(s)){
+    switchTab("doctor"); runDocScan(); speak("Scanning your phone now.");
+  }else if(/^\s*(note|write a note|save a note)/.test(s)){
+    const text=say.replace(/^\s*(note|write a note|save a note)\s*/i,"").trim()||"(empty note)";
+    addNote(text); speak("Note saved.");
+  }else if(/remind me/.test(s)){
+    const text=say.replace(/^\s*remind me\s*(to )?/i,"").trim()||"(reminder)";
+    const at=Date.now()+60*60000; // voice reminders default: 60 minutes
+    addReminder(text,at); speak("Reminder set for one hour from now. Change the time in the daily runner.");
+  }else if(/job|inbox|letter|mail/.test(s)){
+    switchTab("jobs"); pollRing(); speak("Checking the ring for jobs.");
+  }else if(/studio|video|generate/.test(s)){
+    $("goStudio").click(); speak("Opening Nico Gen Studio.");
+  }else if(/whats ?app|reply|message/.test(s)){
+    switchTab("voice"); $("goReply").click(); speak("Drafting your reply. You press send.");
+  }else if(/battery|storage|ram/.test(s)){
+    switchTab("doctor"); runDocScan(); speak("Showing the device report.");
+  }else{
+    addNote(say); speak("I saved that as a note.");
+  }
+}
+
 /* ---------- boot ---------- */
-renderLog(); renderGrants();
+renderLog(); renderGrants(); renderDocList(); renderDaily();
+if(state.cfg.studio&&$("studioUrl"))$("studioUrl").value=state.cfg.studio;
 slog("Agent Deck opened. Default deny active.");
 pruneGrants(); renderGrants();

@@ -133,4 +133,28 @@ label{font-size:13px}
 .limits{display:grid;gap:10px;line-height:1.65;font-size:13.5px;padding-left:18px}
 .limits b{color:var(--text)}
 
+/* phone doctor */
+.doclist{list-style:none;display:grid;gap:8px;margin:0;padding:0;counter-reset:doc}
+.doclist li{
+  counter-increment:doc;display:flex;gap:10px;align-items:flex-start;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+  padding:calc(var(--sp)*2);cursor:pointer;user-select:none;
+}
+.doclist li::before{
+  content:counter(doc,decimal-leading-zero);font-family:"Space Grotesk",sans-serif;
+  font-size:13px;color:var(--a);min-width:26px;padding-top:2px;
+  font-variant-numeric:tabular-nums;
+}
+.doclist li .dcb{
+  flex:none;width:20px;height:20px;border:1px solid var(--line);border-radius:6px;
+  display:grid;place-items:center;font-size:13px;color:transparent;margin-top:1px;
+}
+.doclist li.done{border-color:color-mix(in srgb,var(--pass) 45%,var(--line))}
+.doclist li.done .dcb{background:var(--a);border-color:var(--a);color:#0A0E18}
+.doclist li .dtxt{font-size:13.5px;line-height:1.6;color:var(--text)}
+.doclist li.done .dtxt{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--a)}
+.doclist li .dtxt small{display:block;color:var(--muted);margin-top:3px}
+.doc-progress{font-size:13px;color:var(--muted);margin-top:10px;font-variant-numeric:tabular-nums}
+.doc-progress b{color:var(--text)}
+
 .foot{margin-top:calc(var(--sp)*3);color:var(--muted);font-size:12.5px;line-height:1.7;padding:0 calc(var(--sp)*2)}

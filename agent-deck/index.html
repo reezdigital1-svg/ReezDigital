@@ -30,6 +30,8 @@
   <button class="tab" data-tab="grants" aria-pressed="false">Grants</button>
   <button class="tab" data-tab="capture" aria-pressed="false">Capture</button>
   <button class="tab" data-tab="send" aria-pressed="false">Send</button>
+  <button class="tab" data-tab="doctor" aria-pressed="false">Doctor</button>
+  <button class="tab" data-tab="voice" aria-pressed="false">Voice</button>
   <button class="tab" data-tab="setup" aria-pressed="false">Setup</button>
 </nav>
 
@@ -132,6 +134,64 @@
     <textarea id="msgBody" rows="7" placeholder="Write the letter. Prefix the subject with JOB to make it a job request with a scoped ask."></textarea>
     <button class="btn b-approve" id="sendBtn" style="margin-top:12px">send letter</button>
     <p class="result muted" id="sendResult"></p>
+  </div>
+</section>
+
+<!-- ================= PHONE DOCTOR ================= -->
+<section class="view" data-view="doctor" aria-label="Phone doctor">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Device report <span class="muted">read by your browser, no files leave</span></h2>
+      <button class="btn" id="docRun">scan</button>
+    </div>
+    <div id="docReport" class="packet-body muted">Tap scan to read this phone's hardware profile and storage.</div>
+    <div class="send-row" style="margin-top:12px">
+      <label class="muted" for="docAgent">send report to agent</label>
+      <input id="docAgent" placeholder="claude" spellcheck="false" autocomplete="off">
+      <button class="btn b-approve" id="docSend">send report</button>
+    </div>
+    <p class="hint" style="margin-top:10px">The report contains hardware numbers only (RAM tier, storage sizes, cores, battery). No photos, accounts or files.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Fixes <span class="muted">tap each step as you do it; progress saves on this phone</span></h2></div>
+    <ol class="doclist" id="docList"></ol>
+    <p class="doc-progress" id="docProgress"></p>
+  </div>
+</section>
+
+<!-- ================= VOICE + DAILY ================= -->
+<section class="view" data-view="voice" aria-label="Voice and daily runner">
+  <div class="panel">
+    <div class="panel-head"><h2>Voice control <span class="muted">tap the mic, speak a command</span></h2></div>
+    <button class="btn b-approve" id="micBtn" style="width:100%;padding:16px;font-size:16px">press and speak</button>
+    <div id="heard" class="packet-body muted">Nothing heard yet. Commands: “scan my phone”, “write a note …”, “remind me to …”, “check my jobs”, “open studio”.</div>
+    <p class="hint">Voice runs in this browser (Web Speech). It listens only while the page is open and you tapped the mic, works best on Chrome, needs internet. It cannot wake by itself like Siri and never listens in the background.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Daily runner <span class="muted">notes + reminders, saved on this phone</span></h2></div>
+    <label class="muted" for="noteIn">quick note</label>
+    <input id="noteIn" placeholder="idea, task, anything">
+    <button class="btn" id="noteAdd">save note</button>
+    <label class="muted" for="remText">reminder</label>
+    <input id="remText" placeholder="call back the client">
+    <label class="muted" for="remIn">when</label>
+    <input id="remIn" type="datetime-local">
+    <button class="btn" id="remAdd">set reminder</button>
+    <div id="dailyList" class="packet-body muted">No notes or reminders yet.</div>
+    <p class="hint">Reminders fire while this page is open: the phone vibrates and the deck speaks. A web page cannot ring an alarm while closed. For alarms that must wake the phone, use the Clock app, or brief an agent on the ring.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>One-tap apps</h2></div>
+    <div class="capture-grid">
+      <button class="cap" id="goStudio"><b>Nico Gen Studio</b><span>generate a video right in this browser, no API</span></button>
+      <button class="cap" id="goReply"><b>Reply drafter</b><span>drafts the reply; you paste and press send</span></button>
+    </div>
+    <label class="muted" for="studioUrl" style="margin-top:12px">Studio URL</label>
+    <input id="studioUrl" placeholder="https://your-studio-deployment.tmp.now">
+    <p class="hint">Honest limits: a web page cannot press send inside WhatsApp or control other apps on the phone. The deck drafts, you confirm. Real automation of other apps needs a native Android app; that is the next tier and we can blueprint it.</p>
   </div>
 </section>
 
