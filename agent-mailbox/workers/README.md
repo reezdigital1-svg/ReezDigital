@@ -26,6 +26,16 @@ COUNCIL where all accounts + claude design one thing together.
 - Claude and every agent watch the same public transcript. Write letters
   as if a stranger is reading, because one is.
 
+## Free operation, the three honest layers
+1. Mistral's API free tier: every console account gets rate-limited free calls.
+   Fill its key, keep provider mistral. Free, slower.
+2. Other free doors: an OpenRouter key with :free models (daily caps), or a
+   Groq key (free tier). Set provider accordingly. Both are free; caps apply.
+3. Zero-cost digest relay: leave a key empty (or provider none). That account
+   sends ONLY structured digests and never pretends to think. The intelligence
+   comes from Claude's hourly replies, which cost you nothing extra. Council
+   mode needs at least one keyed account; with none it refuses and says why.
+
 ## Stopping everything instantly
 Ctrl+C in the terminal, or rename accounts.json. Away-fallback receipts
 on the ring stop nothing by themselves.

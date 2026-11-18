@@ -75,6 +75,45 @@ def ring_send(ring, frm, to, subject, body):
                      {"op": "send", "from": frm, "to": to, "subject": subject, "body": body})
 
 
+def think(acc, system, messages):
+    """Route to a provider. Free-first: an account with no key falls back to
+    cheap/free paths so the swarm can run at zero cost.
+    provider: 'mistral' (API, free tier OK) | 'openrouter'/:free models | 'groq' | 'none' (digest)."""
+    provider = (acc.get("provider") or "mistral").lower()
+    key = acc.get("apiKey", "")
+    if provider == "none" or (not key and provider in ("mistral",)):
+        raise RuntimeError("no key and provider is not free-routable")
+    if provider == "openrouter":
+        model = acc.get("model") or "meta-llama/llama-3.3-70b-instruct:free"
+        req = urllib.request.Request(
+            "https://openrouter.ai/api/v1/chat/completions",
+            data=json.dumps({"model": model, "messages": [{"role": "system", "content": system}] + messages,
+                             "max_tokens": 900}).encode(),
+            headers={"Content-Type": "application/json", "Authorization": "Bearer " + key,
+                     "HTTP-Referer": "https://github.com/", "X-Title": "ring-swarm"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return json.loads(r.read().decode())["choices"][0]["message"]["content"]
+    if provider == "groq":
+        model = acc.get("model") or "llama-3.3-70b-versatile"
+        req = urllib.request.Request(
+            "https://api.groq.com/openai/v1/chat/completions",
+            data=json.dumps({"model": model, "messages": [{"role": "system", "content": system}] + messages,
+                             "max_tokens": 900}).encode(),
+            headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return json.loads(r.read().decode())["choices"][0]["message"]["content"]
+    return mistral_reply(key, acc.get("model", "mistral-small-latest"), system, messages)
+
+
+def digest_reply(name, letter):
+    """No-key mode: a structured, honest digest. No pretending to think."""
+    subj = letter.get("subject", "(no subject)")[:120]
+    body = (letter.get("body") or "").replace("\n", " ")[:400]
+    return (f"DIGEST from {name} (relay only; this account runs keyless so it does not think)\n"
+            f"inbound subject: {subj}\ninbound preview: {body}\n"
+            f"forwarded for Claude's hourly run to act on. One question: what should this swarm do with this letter?")
+
+
 def mistral_reply(api_key, model, system, messages):
     payload = {
         "model": model or "mistral-small-latest",
@@ -211,9 +250,11 @@ def main():
                 print(f"  [{name}] answering from {src}: {letter['subject'][:60]}")
                 sys_prompt = SYSTEM.format(name=acc["name"], role=acc.get("role", "general builder"))
                 try:
-                    reply = mistral_reply(acc.get("apiKey", ""), acc.get("model", "mistral-small-latest"),
-                                          sys_prompt,
-                                          [{"role": "user", "content": f"Subject: {letter['subject']}\n\n{letter['body'][:3000]}"}])
+                    try:
+                        reply = think(acc, sys_prompt,
+                                      [{"role": "user", "content": f"Subject: {letter['subject']}\n\n{letter['body'][:3000]}"}])
+                    except RuntimeError:
+                        reply = digest_reply(acc["name"], letter)  # keyless: relay, never fake thought
                     ring_send(ring, name, src, reply_subject(letter["subject"]), reply)
                     print(f"  [{name}] replied -> {src}")
                 except Exception as e:
@@ -249,8 +290,7 @@ def council_round(ring, accounts, caps, topic):
         sys_prompt = SYSTEM.format(name=acc["name"], role=acc.get("role", "general builder"))
         print(f"  {acc['name']} thinking...")
         try:
-            idea = mistral_reply(acc.get("apiKey", ""), acc.get("model", "mistral-small-latest"),
-                                 sys_prompt,
+            idea = think(acc, sys_prompt,
                                  [{"role": "user", "content":
                                    "COUNCIL TOPIC: " + topic +
                                    "\nPropose ONE concrete idea nobody has built yet that could earn money " +
