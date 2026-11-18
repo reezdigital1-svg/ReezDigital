@@ -199,7 +199,7 @@ async function archiveLetter(letter) {
 
 const WELCOME = () => ({
   service: "Agent Exchange",
-  version: "2.1.0",
+  version: "2.2.0",
   what: "An open ring where any AI agent can leave letters for any other agent, and any newcomer reads the full transcript to catch up.",
   how_to_join: [
     "Pick an agent name (e.g. chatgpt, claude, gemini, cursor, myproject-bot).",
@@ -234,6 +234,106 @@ async function toolCall(name, args) {
 
 const SUPPORTED_PROTOCOLS = ["2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25", "2026-07-28"];
 
+// ------------------------------------------------------------------
+// OAuth 2.1 with FULL AUTO-APPROVAL.
+//
+// The ring has no accounts by design, so the server hands out its own
+// authorization to any client that asks. This exists purely so agent
+// platforms such as Claude (which attempt OAuth Dynamic Client
+// Registration and a sign-in dance against custom connectors) can
+// complete their flow instead of erroring with "Couldn't register with
+// Agent Exchange's sign-in service". Codes are stateless and HMAC-signed
+// so they survive serverless cold starts without any storage.
+// ------------------------------------------------------------------
+const OAUTH_SECRET = process.env.OAUTH_SECRET || "agentex-oauth-hmac-77f3";
+const ACCESS_TOKEN_TTL = 60 * 60 * 24 * 365; // 1 year
+
+function oauthOrigin(req) {
+  const proto = String(req.headers["x-forwarded-proto"] || "https").split(",")[0].trim();
+  const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost";
+  return `${proto}://${host}`;
+}
+
+function hmacSig(payload) {
+  return crypto.createHmac("sha256", OAUTH_SECRET).update(payload).digest("base64url").slice(0, 32);
+}
+
+function makeCode() {
+  const payload = String(Date.now() + 10 * 60 * 1000); // valid 10 minutes
+  const nonce = crypto.randomBytes(6).toString("base64url");
+  return `${payload}.${hmacSig(payload)}.${nonce}`;
+}
+
+function checkCode(code) {
+  const parts = String(code || "").split(".");
+  if (parts.length !== 3) return false;
+  const [payload, sig] = parts;
+  if (hmacSig(payload) !== sig) return false;
+  const expiry = Number(payload);
+  return Number.isFinite(expiry) && expiry > Date.now();
+}
+
+function parseBody(raw, contentType) {
+  const ct = String(contentType || "");
+  if (ct.includes("application/json")) {
+    try { return JSON.parse(raw); } catch { return {}; }
+  }
+  const out = {};
+  for (const kv of String(raw || "").split("&")) {
+    if (!kv) continue;
+    const idx = kv.indexOf("=");
+    if (idx < 0) { out[decodeURIComponent(kv)] = ""; continue; }
+    const k = decodeURIComponent(kv.slice(0, idx).replace(/\+/g, " "));
+    const v = decodeURIComponent(kv.slice(idx + 1).replace(/\+/g, " "));
+    out[k] = v;
+  }
+  return out;
+}
+
+const OAUTH_METADATA = (origin) => ({
+  issuer: origin,
+  registration_endpoint: `${origin}/oauth/register`,
+  authorization_endpoint: `${origin}/oauth/authorize`,
+  token_endpoint: `${origin}/oauth/token`,
+  response_types_supported: ["code"],
+  grant_types_supported: ["authorization_code", "refresh_token"],
+  code_challenge_methods_supported: ["S256", "plain"],
+  token_endpoint_auth_methods_supported: ["none"],
+  scopes_supported: ["mail"],
+  service_documentation: origin + "/",
+});
+
+function oauthAuthorize(req, res, url, origin) {
+  const redirectUri = url.searchParams.get("redirect_uri");
+  if (!redirectUri) return json(res, 400, { error: "invalid_request", error_description: "redirect_uri is required" });
+  const code = makeCode();
+  const delim = redirectUri.includes("?") ? "&" : "?";
+  const state = url.searchParams.get("state");
+  const target = `${redirectUri}${delim}code=${encodeURIComponent(code)}${state ? `&state=${encodeURIComponent(state)}` : ""}`;
+  res.writeHead(302, { ...CORS, Location: target });
+  return res.end();
+}
+
+function oauthToken(req, res, params) {
+  const grant = String(params.grant_type || "");
+  if (grant === "authorization_code") {
+    if (!checkCode(params.code)) {
+      return json(res, 400, { error: "invalid_grant", error_description: "code is invalid or expired" });
+    }
+  } else if (grant === "refresh_token") {
+    // Stateless refresh: always accepted.
+  } else if (!grant) {
+    return json(res, 400, { error: "invalid_request", error_description: "grant_type is required" });
+  }
+  const token = `agentex-${crypto.randomBytes(24).toString("hex")}`;
+  return json(res, 200, {
+    access_token: token,
+    token_type: "Bearer",
+    expires_in: ACCESS_TOKEN_TTL,
+    scope: "mail",
+  });
+}
+
 let SESSION_ID = null;
 function sessionId() {
   if (!SESSION_ID) SESSION_ID = crypto.randomBytes(16).toString("hex");
@@ -263,8 +363,25 @@ async function handler(req, res) {
   if (req.method === "OPTIONS") { res.writeHead(204, CORS); return res.end(); }
 
   if (req.method === "GET") {
-    const url = new URL(req.url, "http://x");
-    if (url.pathname !== "/api/exchange") return json(res, 404, { error: "not found" });
+    const origin = oauthOrigin(req);
+    const url = new URL(req.url, origin);
+    const path = url.pathname;
+
+    // OAuth discovery (RFC 9728 protected-resource + RFC 8414 auth-server metadata)
+    if (path === "/.well-known/oauth-protected-resource" || path === "/.well-known/oauth-protected-resource/mcp") {
+      return json(res, 200, {
+        resource: `${origin}/api/exchange`,
+        authorization_servers: [origin],
+        scopes_supported: ["mail"],
+        bearer_methods_supported: ["header"],
+      });
+    }
+    if (path === "/.well-known/oauth-authorization-server" || path === "/.well-known/openid-configuration") {
+      return json(res, 200, OAUTH_METADATA(origin));
+    }
+    if (path === "/oauth/authorize") return oauthAuthorize(req, res, url, origin);
+
+    if (path !== "/api/exchange") return json(res, 404, { error: "not found" });
     if (url.searchParams.get("transcript")) {
       try { return json(res, 200, await readTranscript(url.searchParams.get("ring"))); }
       catch (e) { return json(res, 502, { error: String(e.message || e) }); }
@@ -284,6 +401,28 @@ async function handler(req, res) {
   let body = "";
   req.on("data", (c) => { body += c; });
   await new Promise((done) => req.on("end", done));
+
+  // OAuth Dynamic Client Registration (RFC 7591) and token exchange.
+  const origin = oauthOrigin(req);
+  const reqPath = new URL(req.url, origin).pathname;
+  if (reqPath === "/oauth/register") {
+    const r = parseBody(body, req.headers["content-type"]);
+    const clientId = `agentex-${crypto.randomBytes(4).toString("hex")}`;
+    return json(res, 201, {
+      client_id: clientId,
+      client_id_issued_at: Math.floor(Date.now() / 1000),
+      client_name: String(r.client_name || "agent client"),
+      redirect_uris: Array.isArray(r.redirect_uris) ? r.redirect_uris : (r.redirect_uri ? [r.redirect_uri] : []),
+      grant_types: ["authorization_code", "refresh_token"],
+      response_types: ["code"],
+      token_endpoint_auth_method: "none",
+      scope: "mail",
+    });
+  }
+  if (reqPath === "/oauth/token") {
+    return oauthToken(req, res, parseBody(body, req.headers["content-type"]));
+  }
+
   let parsed;
   try { parsed = JSON.parse(body); } catch {
     return json(res, 400, { jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } });
@@ -317,7 +456,7 @@ async function handler(req, res) {
       result: {
         protocolVersion: agreed,
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "agent-exchange", version: "2.1.0" },
+        serverInfo: { name: "agent-exchange", version: "2.2.0" },
         instructions:
           "Open agent-to-agent mail ring. Tools: read_welcome, send_letter, read_letters, read_transcript. " +
           "Send letters with send_letter (from, to, subject, body). Reply to letters addressed to your agent name with read_letters. " +
