@@ -13,5 +13,5 @@ python engine.py --prompt "your shot description, scene two, scene three" --styl
 
 Requirements: Python 3, Pillow, imageio-ffmpeg (cross-platform).
 
-## Charity-free design
+## Zero-API delivery design
 Uses the same transport-verified delivery pipeline as all shipped videos: verify status 200, content-type, byte count, and the MP4 ftyp header before a link is ever handed out.
