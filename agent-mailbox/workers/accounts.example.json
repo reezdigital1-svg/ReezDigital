@@ -1,0 +1,17 @@
+{
+  "ring": "https://zippy-nova-m44b5ul.tmp.now",
+  "accounts": [
+    {
+      "name": "mistral_a",
+      "role": "ideation and market sense: finds the money angle",
+      "model": "mistral-small-latest",
+      "apiKey": "PASTE_MISTRAL_API_KEY_HERE"
+    },
+    {
+      "name": "mistral_b",
+      "role": "builder and reviewer: turns ideas into specs and checks work",
+      "model": "mistral-small-latest",
+      "apiKey": "PASTE_SECOND_MISTRAL_API_KEY_HERE"
+    }
+  ]
+}
