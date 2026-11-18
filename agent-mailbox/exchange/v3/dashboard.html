@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Exchange v3 - Self-Training Ring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ================= TOP BAR ================= -->
+<header class="topbar" role="banner">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">Agent Exchange <b>v3</b></span>
+  </div>
+  <div class="topbar-stats" role="status">
+    <span class="stat"><span class="stat-label">Round</span> <span class="stat-num" id="statRound">12</span></span>
+    <span class="stat"><span class="stat-label">Status</span> <span class="dot dot-live" aria-hidden="true"></span><span id="statStatus">training</span></span>
+    <span class="stat"><span class="stat-label">Backend</span> <span id="statBackend">detecting&hellip;</span></span>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Sections">
+  <button class="tab is-active" data-tab="dashboard" aria-pressed="true">Score</button>
+  <button class="tab" data-tab="agents" aria-pressed="false">A / B</button>
+  <button class="tab" data-tab="log" aria-pressed="false">Log</button>
+  <button class="tab" data-tab="report" aria-pressed="false">Report</button>
+  <button class="tab" data-tab="contrast" aria-pressed="false">Contrast</button>
+</nav>
+
+<main id="app">
+
+<!-- ================= DASHBOARD ================= -->
+<section class="view view-dashboard is-active" data-view="dashboard" aria-label="Score dashboard">
+
+  <!-- focal point 1: the score line -->
+  <div class="panel panel-score" role="img" aria-label="Score line: worst-channel gap by round, lower is better">
+    <div class="panel-head">
+      <h2>Score <span class="muted">worst-channel gap vs real tiles</span></h2>
+      <span class="axis-note">lower is better &darr;</span>
+    </div>
+    <canvas id="scoreChart" width="1120" height="280"></canvas>
+    <div class="score-legend">
+      <span><i class="sw sw-gap"></i> worst-channel gap</span>
+      <span><i class="sw sw-band"></i> pass tolerance (&le; 0.05)</span>
+      <span><i class="sw sw-thin"></i> per-channel</span>
+    </div>
+  </div>
+
+  <div class="cols">
+    <!-- agent A -->
+    <article class="panel agent agentA" aria-label="Agent A, generator">
+      <header class="agent-head">
+        <span class="agent-chip chipA" aria-hidden="true"></span>
+        <h3>Agent A <span class="muted">generator</span></h3>
+        <span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> pass</span>
+      </header>
+      <canvas class="agent-tile" id="tileA" width="240" height="240" aria-label="Latest output of agent A"></canvas>
+      <p class="agent-msg">&ldquo;Round 12 drawn, seed 0777. Amber worlds, violet core.&rdquo;</p>
+    </article>
+
+    <!-- agent B -->
+    <article class="panel agent agentB" aria-label="Agent B, critic">
+      <header class="agent-head">
+        <span class="agent-chip chipB" aria-hidden="true"></span>
+        <h3>Agent B <span class="muted">critic</span></h3>
+        <span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> pass</span>
+      </header>
+      <div class="critic-grid" id="criticStats">
+        <div class="k"><span class="muted">R gap</span><b class="tnum">0.048</b></div>
+        <div class="k"><span class="muted">G gap</span><b class="tnum">0.041</b></div>
+        <div class="k"><span class="muted">B gap</span><b class="tnum">0.037</b></div>
+        <div class="k"><span class="muted">worst</span><b class="tnum">R 0.048</b></div>
+      </div>
+      <p class="agent-msg">&ldquo;Grade: run 12 scores 0.048 worst channel. Within tolerance for the third round running.&rdquo;</p>
+    </article>
+  </div>
+
+  <!-- before/after strips -->
+  <div class="panel panel-strips" aria-label="Before and after strips, fixed seeds">
+    <div class="panel-head"><h2>Before / after <span class="muted">fixed seeds, every round the same rows</span></h2></div>
+    <div class="strip-row">
+      <span class="strip-label">real ref</span>
+      <canvas width="112" height="112" data-kind="real"></canvas>
+      <canvas width="112" height="112" data-kind="real"></canvas>
+      <canvas width="112" height="112" data-kind="real"></canvas>
+      <canvas width="112" height="112" data-kind="real"></canvas>
+      <canvas width="112" height="112" data-kind="real"></canvas>
+    </div>
+    <div class="strip-row">
+      <span class="strip-label">round 0</span>
+      <canvas width="112" height="112" data-kind="r0"></canvas>
+      <canvas width="112" height="112" data-kind="r0"></canvas>
+      <canvas width="112" height="112" data-kind="r0"></canvas>
+      <canvas width="112" height="112" data-kind="r0"></canvas>
+      <canvas width="112" height="112" data-kind="r0"></canvas>
+    </div>
+    <div class="strip-row">
+      <span class="strip-label">round 6</span>
+      <canvas width="112" height="112" data-kind="r6"></canvas>
+      <canvas width="112" height="112" data-kind="r6"></canvas>
+      <canvas width="112" height="112" data-kind="r6"></canvas>
+      <canvas width="112" height="112" data-kind="r6"></canvas>
+      <canvas width="112" height="112" data-kind="r6"></canvas>
+    </div>
+    <div class="strip-row">
+      <span class="strip-label">round 12</span>
+      <canvas width="112" height="112" data-kind="r12"></canvas>
+      <canvas width="112" height="112" data-kind="r12"></canvas>
+      <canvas width="112" height="112" data-kind="r12"></canvas>
+      <canvas width="112" height="112" data-kind="r12"></canvas>
+      <canvas width="112" height="112" data-kind="r12"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ================= AGENTS (phone tab = A/B) ================= -->
+<section class="view view-agents" data-view="agents" aria-label="Agents">
+  <div class="cols wrap">
+    <article class="panel agent agentA">
+      <header class="agent-head">
+        <span class="agent-chip chipA" aria-hidden="true"></span>
+        <h3>Agent A <span class="muted">generator</span></h3>
+      </header>
+      <canvas class="agent-tile" width="240" height="240"></canvas>
+      <p class="agent-msg">Draws the round with A-fixed seeds. Cannot edit the grader. Latest: round 12, seed 0777.</p>
+    </article>
+    <article class="panel agent agentB">
+      <header class="agent-head">
+        <span class="agent-chip chipB" aria-hidden="true"></span>
+        <h3>Agent B <span class="muted">critic</span></h3>
+      </header>
+      <div class="critic-grid">
+        <div class="k"><span class="muted">rubric</span><b>C1 fixed</b></div>
+        <div class="k"><span class="muted">rules by</span><b>worst channel</b></div>
+        <div class="k"><span class="muted">ref tiles</span><b>256 held out</b></div>
+        <div class="k"><span class="muted">edited by</span><b>nobody</b></div>
+      </div>
+      <p class="agent-msg">The grade is a fixed script against held-out real tiles. Neither agent can edit it.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ================= LOG ================= -->
+<section class="view view-log" data-view="log" aria-label="Round log, newest first">
+  <div class="panel panel-log"><div class="panel-head"><h2>Round log <span class="muted">newest first, one change per round</span></h2></div>
+    <ol class="roundlog" id="roundLog"></ol>
+  </div>
+</section>
+
+<!-- ================= REPORT ================= -->
+<section class="view view-report" data-view="report" aria-label="Round report">
+  <article class="report-col">
+    <h1 class="report-title">Round 12 report</h1>
+    <p class="report-change"><span class="step-tag">change made</span> R-channel bias correction in the sampler dry-run set.</p>
+    <table class="report-table">
+      <thead><tr><th>channel</th><th>gap</th><th>tolerance</th><th>verdict</th></tr></thead>
+      <tbody>
+        <tr><td>R</td><td class="tnum">0.048</td><td class="tnum">0.05</td><td><span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> pass</span></td></tr>
+        <tr><td>G</td><td class="tnum">0.041</td><td class="tnum">0.05</td><td><span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> pass</span></td></tr>
+        <tr><td>B</td><td class="tnum">0.037</td><td class="tnum">0.05</td><td><span class="verdict verdict-pass"><span class="ic" aria-hidden="true">&#10003;</span> pass</span></td></tr>
+      </tbody>
+    </table>
+    <p class="report-note">Worst channel rules the round: R 0.048. Tolerance 0.05. This is the plot above, one round enlarged.</p>
+    <footer class="report-open">
+      <h3>Open questions</h3>
+      <ol>
+        <li>Does the R bias return when training length triples?</li>
+        <li>Should round 13 switch the sampler seed scheme?</li>
+      </ol>
+    </footer>
+  </article>
+</section>
+
+<!-- ================= CONTRAST REPORT ================= -->
+<section class="view view-contrast" data-view="contrast" aria-label="Contrast report">
+  <div class="panel panel-contrast">
+    <div class="panel-head">
+      <h2>Contrast report <span class="muted">computed in code, not eyeballed</span></h2>
+      <span class="gate" id="gateBadge">checking&hellip;</span>
+    </div>
+    <table class="report-table" id="contrastTable">
+      <thead><tr><th>pair</th><th>ratio</th><th>required</th><th>verdict</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <p>No names, no paths, no private tiles on this page. The grader is a fixed script neither agent edits. Unattended ring reading ships only after signed sends.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
