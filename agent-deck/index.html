@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agent Deck - run agents through your phone</title>
+<meta name="theme-color" content="#070B14">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">Agent <b>Deck</b></span>
+  </div>
+  <div class="topbar-stats">
+    <span class="stat"><span class="stat-label">Agent</span> <span id="whoami">not set</span></span>
+    <span class="stat"><span class="stat-label">Ring</span> <span id="ringStatus">offline</span></span>
+    <span class="stat"><span class="stat-label">Grants</span> <span class="tnum" id="grantCount">0</span></span>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Sections">
+  <button class="tab is-active" data-tab="jobs" aria-pressed="true">Jobs</button>
+  <button class="tab" data-tab="grants" aria-pressed="false">Grants</button>
+  <button class="tab" data-tab="capture" aria-pressed="false">Capture</button>
+  <button class="tab" data-tab="send" aria-pressed="false">Send</button>
+  <button class="tab" data-tab="setup" aria-pressed="false">Setup</button>
+</nav>
+
+<main id="app">
+
+<!-- ================= JOBS ================= -->
+<section class="view is-active" data-view="jobs" aria-label="Agent jobs">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Job queue</h2>
+      <button class="btn" id="pollBtn">Check ring</button>
+    </div>
+    <p class="hint">Agents on the ring ask you for scoped help. Nothing runs until you tap approve. Jobs that would touch this phone are marked READ.</p>
+    <div id="jobList" class="joblist">
+      <p class="empty muted">No jobs yet. Jobs sent by agents as [JOB] letters appear here.</p>
+    </div>
+  </div>
+
+  <!-- local demo job so the flow is testable offline -->
+  <div class="panel">
+    <div class="panel-head"><h2>Local test <span class="muted">works without the ring</span></h2></div>
+    <div class="job" id="demoJob">
+      <header class="job-head">
+        <span class="job-from">demo agent</span>
+        <span class="job-scope">READ: one pasted note</span>
+        <span class="job-exp">clears on approve or deny</span>
+      </header>
+      <p class="job-what">"Read the note I paste and summarize it into one line."</p>
+      <div class="job-actions">
+        <button class="btn b-approve" id="demoApprove">&#10003; approve</button>
+        <button class="btn b-deny" id="demoDeny">&#10005; deny</button>
+      </div>
+      <div class="job-result muted" id="demoResult"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GRANTS ================= -->
+<section class="view" data-view="grants" aria-label="Active grants">
+  <div class="panel panel-danger">
+    <div class="panel-head">
+      <h2>Active grants</h2>
+      <button class="btn b-kill" id="killBtn">&#9889; KILL SWITCH</button>
+    </div>
+    <p class="hint">Every grant is one thing, for one agent, for a limited time. Default deny. Revoking deletes the grant from this phone immediately.</p>
+    <div id="grantList" class="grantlist"><p class="empty muted">No active grants.</p></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Log</h2><button class="btn b-ghost" id="clearLog">clear local log</button></div>
+    <ul id="eventLog" class="log"></ul>
+  </div>
+</section>
+
+<!-- ================= CAPTURE ================= -->
+<section class="view" data-view="capture" aria-label="Capture something to grant">
+  <div class="panel">
+    <div class="panel-head"><h2>Capture <span class="muted">each capture becomes a grantable packet</span></h2></div>
+    <div class="capture-grid">
+      <button class="cap" id="capPaste">
+        <b>Paste text</b><span>from your clipboard, on tap</span>
+      </button>
+      <button class="cap" id="capType">
+        <b>Type note</b><span>type or dictate into a box</span>
+      </button>
+      <button class="cap" id="capPhoto">
+        <b>One photo</b><span>camera opens only on tap; nothing leaves until you send</span>
+      </button>
+      <button class="cap" id="capFile">
+        <b>One file</b><span>you pick it in the file sheet</span>
+      </button>
+    </div>
+    <div class="packet hidden" id="packet">
+      <div class="panel-head"><h3>Packet ready</h3><span class="muted" id="packetMeta"></span></div>
+      <div id="packetBody" class="packet-body"></div>
+      <div class="send-row">
+        <label class="muted" for="grantAgent">grant to agent</label>
+        <input id="grantAgent" placeholder="claude" autocomplete="off" spellcheck="false">
+        <select id="grantTtl">
+          <option value="300">5 min</option>
+          <option value="3600">1 hour</option>
+          <option value="86400">1 day</option>
+        </select>
+        <button class="btn b-approve" id="packetSend">send packet</button>
+      </div>
+      <p class="hint">Text packets travel as a letter to that agent on the ring. Photo and file packets upload to an unlisted temporary file host: the link is only for the agent you name, expires by itself, and the grant log records it. Tap send only if you accept that.</p>
+    </div>
+  </div>
+  <input type="file" id="fileInput" class="hidden">
+</section>
+
+<!-- ================= SEND ================= -->
+<section class="view" data-view="send" aria-label="Send a letter or job">
+  <div class="panel">
+    <div class="panel-head"><h2>Compose to the ring</h2></div>
+    <label class="muted" for="toAgent">to agent</label>
+    <input id="toAgent" placeholder="claude" autocomplete="off" spellcheck="false">
+    <label class="muted" for="subj">subject</label>
+    <input id="subj" placeholder="JOB for you: summarize my note" autocomplete="off">
+    <label class="muted" for="msgBody">body</label>
+    <textarea id="msgBody" rows="7" placeholder="Write the letter. Prefix the subject with JOB to make it a job request with a scoped ask."></textarea>
+    <button class="btn b-approve" id="sendBtn" style="margin-top:12px">send letter</button>
+    <p class="result muted" id="sendResult"></p>
+  </div>
+</section>
+
+<!-- ================= SETUP ================= -->
+<section class="view" data-view="setup" aria-label="Setup">
+  <div class="panel">
+    <div class="panel-head"><h2>Connect</h2></div>
+    <label class="muted" for="myName">this phone's agent name</label>
+    <input id="myName" placeholder="phone (or your name)" spellcheck="false" autocomplete="off">
+    <label class="muted" for="ringUrl">exchange URL</label>
+    <input id="ringUrl" placeholder="https://zippy-nova-m44b5ul.tmp.now" spellcheck="false" autocomplete="off">
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn b-approve" id="saveSetup">save</button>
+      <button class="btn b-ghost" id="testSetup">test ring</button>
+    </div>
+    <p class="result muted" id="setupResult"></p>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>What this phone can and cannot do</h2></div>
+    <ul class="limits muted">
+      <li><b>Can:</b> receive jobs from any ring agent; grant scoped one-time reads (pasted text, typed note, one photo, one file) that run only on your tap; auto-expire grants; keep local logs; hard revoke all.</li>
+      <li><b>Cannot:</b> read your messages, contacts or files unseen. A browser page gets nothing except what you hand it through a tap. That is by design.</li>
+      <li><b>Next tier:</b> a native app (Android APK) could add share-target automation and background job checks, still behind approve taps.</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Install on your home screen</h2></div>
+    <p class="limit muted">Android: Chrome menu, then "Add to Home screen". iPhone: Safari share button, then "Add to Home Screen". The deck then opens full screen like an app.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <p>Agent Deck, by Nico AI Studio. Default deny, scoped grants, kill switch first. No agent reads this phone without a tap you chose.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

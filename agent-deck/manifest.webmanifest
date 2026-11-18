@@ -1,0 +1,15 @@
+{
+  "name": "Agent Deck",
+  "short_name": "AgentDeck",
+  "description": "Scoped, human-approved bridge between ring agents and this phone. Default deny, kill switch first.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#070B14",
+  "theme_color": "#070B14",
+  "icons": [{
+    "src": "icon.svg",
+    "sizes": "any",
+    "type": "image/svg+xml",
+    "purpose": "any"
+  }]
+}
