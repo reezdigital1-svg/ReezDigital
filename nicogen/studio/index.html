@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nico Gen Studio</title>
+<style>
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #05060F; color: #F5F7FF; min-height: 100vh;
+    font-family: "Segoe UI", -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    display: flex; flex-direction: column; align-items: center; padding: 32px 18px 60px;
+  }
+  .glow-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(60% 40% at 50% 0%, rgba(124,58,237,0.18), transparent 70%),
+                radial-gradient(40% 30% at 80% 90%, rgba(0,240,255,0.10), transparent 70%); }
+  .wrap { position: relative; z-index: 1; width: 100%; max-width: 1060px; }
+  h1 {
+    font-size: 2.6rem; letter-spacing: 0.03em; text-align: center;
+    background: linear-gradient(90deg, #00F0FF, #7C3AED, #FF2E9A);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .tagline { text-align: center; color: #969EB4; margin: 6px 0 26px; }
+  .panel {
+    background: linear-gradient(160deg, rgba(124,58,237,0.10), rgba(0,240,255,0.05));
+    border: 1px solid rgba(0,240,255,0.22); border-radius: 18px; padding: 22px;
+    box-shadow: 0 0 50px rgba(124,58,237,0.15); margin-bottom: 18px;
+  }
+  label { display: block; font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; color: #00F0FF; margin: 14px 0 6px; }
+  textarea {
+    width: 100%; background: rgba(0,0,0,0.35); color: #F5F7FF;
+    border: 1px solid rgba(0,240,255,0.25); border-radius: 10px; padding: 12px;
+    font-size: 1rem; min-height: 74px; resize: vertical; outline: none;
+  }
+  textarea:focus { border-color: #00F0FF; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; }
+  .row > div { flex: 1; min-width: 150px; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    border: 1px solid rgba(0,240,255,0.3); border-radius: 999px; padding: 7px 16px;
+    color: #C9CFDF; cursor: pointer; user-select: none; font-size: 0.92rem;
+  }
+  .pill.on { background: linear-gradient(90deg, rgba(0,240,255,0.22), rgba(124,58,237,0.22)); color: #fff; border-color: #00F0FF; }
+  input[type=range] { width: 100%; accent-color: #00F0FF; }
+  .meta { color: #969EB4; font-size: 0.85rem; }
+  .gen {
+    display: block; width: 100%; margin-top: 18px; padding: 14px; border: 0; border-radius: 12px;
+    font-size: 1.1rem; font-weight: 700; letter-spacing: 0.06em; color: #05060F; cursor: pointer;
+    background: linear-gradient(90deg, #00F0FF, #7C3AED, #FF2E9A);
+    box-shadow: 0 0 30px rgba(0,240,255,0.35);
+  }
+  .gen:disabled { opacity: 0.55; cursor: wait; }
+  .stage { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid rgba(0,240,255,0.25); background: #000; }
+  canvas, video { width: 100%; display: block; }
+  .progress { height: 4px; background: rgba(255,255,255,0.12); border-radius: 3px; margin-top: 12px; overflow: hidden; }
+  .progress > i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #00F0FF, #FF2E9A); transition: width 0.15s linear; }
+  .actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 18px; border-radius: 10px; border: 1px solid rgba(0,240,255,0.35);
+    background: rgba(0,240,255,0.10); color: #7FF3FF; cursor: pointer; font-size: 0.95rem;
+  }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .how { color: #969EB4; font-size: 0.9rem; line-height: 1.6; }
+  .how code { color: #7FF3FF; }
+  .logo-corner { position: absolute; top: 10px; right: 14px; font-size: 0.72rem; letter-spacing: 0.14em; color: rgba(255,255,255,0.4); z-index: 5; }
+</style>
+</head>
+<body>
+<div class="glow-bg"></div>
+<div class="wrap">
+  <h1>NICO GEN STUDIO</h1>
+  <p class="tagline">Type a shot. The engine renders it. No APIs, no keys, no metering. Ever.</p>
+
+  <div class="panel">
+    <label>Prompt</label>
+    <textarea id="prompt">a lone signal under a neon storm, machines waking in the dark, the future renders itself</textarea>
+
+    <div class="row">
+      <div>
+        <label>Style</label>
+        <div class="pills" id="styles">
+          <div class="pill on" data-s="cinematic">Cinematic</div>
+          <div class="pill" data-s="neon">Neon</div>
+          <div class="pill" data-s="minimal">Minimal</div>
+          <div class="pill" data-s="noir">Noir</div>
+        </div>
+      </div>
+      <div>
+        <label>Format</label>
+        <div class="pills" id="formats">
+          <div class="pill on" data-f="1920x1080">16:9</div>
+          <div class="pill" data-f="1080x1920">9:16</div>
+          <div class="pill" data-f="1080x1080">1:1</div>
+        </div>
+      </div>
+      <div>
+        <label>Duration: <span id="durlabel" style="color:#F5F7FF">8s</span></label>
+        <input type="range" id="dur" min="4" max="16" step="1" value="8">
+        <label style="margin-top:10px"><input type="checkbox" id="music" checked> Ambient score</label>
+      </div>
+    </div>
+
+    <button class="gen" id="gen">GENERATE</button>
+    <div class="progress"><i id="bar"></i></div>
+  </div>
+
+  <div class="panel">
+    <div class="stage" id="stage">
+      <div class="logo-corner">NICO GEN STUDIO</div>
+      <canvas id="cv"></canvas>
+      <video id="pv" controls playsinline style="display:none"></video>
+    </div>
+    <div class="actions">
+      <button class="btn" id="dl" disabled>Download video</button>
+      <button class="btn" id="again" disabled>Render again</button>
+    </div>
+  </div>
+
+  <div class="panel how">
+    <strong style="color:#00F0FF">How it generates.</strong>
+    Your prompt is split into scenes. Each scene gets a camera move (push, drift, orbit) and a
+    scene type from the engine language: <code>horizon</code>, <code>orb</code>, <code>grid</code>,
+    <code>starfield</code>, <code>typo</code>. The film pass adds grain, vignette, letterbox and
+    anamorphic light. Rendering and recording happen 100% in this page: the canvas is captured by
+    MediaRecorder and encoded on the spot, so the video belongs to you the second it exists.
+  </div>
+</div>
+
+<script>
+(() => {
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const pv = document.getElementById('pv'), bar = document.getElementById('bar');
+const gen = document.getElementById('gen'), dl = document.getElementById('dl'), again = document.getElementById('again');
+
+const STYLES = {
+  cinematic: { sky: ['#181C3A','#5E347A','#E26A54'], sun: '#FFB078', acc: '#FFB078', acc2: '#78B4FF', bg: '#070910', letterbox: 0.085, grain: 0.05, title: '"Playfair Display", Georgia, serif', uiF: 'system-ui, sans-serif' },
+  neon:      { sky: ['#0A0618','#3B0A66','#006C80'], sun: '#00F0FF', acc: '#00F0FF', acc2: '#FF2E9A', bg: '#05060F', letterbox: 0, grain: 0.07, title: '"Orbitron", system-ui', uiF: 'system-ui' },
+  minimal:   { sky: ['#F5F5F2','#F5F5F2','#D2D2CD'], sun: '#141414', acc: '#141414', acc2: '#787878', bg: '#F5F5F2', letterbox: 0, grain: 0.02, title: 'Georgia, serif', uiF: 'system-ui' },
+  noir:      { sky: ['#08080A','#222226','#5E5E66'], sun: '#E6E6E6', acc: '#E6E6E6', acc2: '#9696A0', bg: '#08080A', letterbox: 0.10, grain: 0.09, title: '"Times New Roman", serif', uiF: 'system-ui' },
+};
+let style = 'cinematic', fmt = [1920, 1080]; // internal render scale, CSS scales display
+
+document.getElementById('styles').onclick = e => {
+  const p = e.target.closest('.pill'); if (!p) return;
+  style = p.dataset.s;
+  [...e.currentTarget.children].forEach(x => x.classList.toggle('on', x === p));
+};
+document.getElementById('formats').onclick = e => {
+  const p = e.target.closest('.pill'); if (!p) return;
+  fmt = p.dataset.f.split('x').map(Number);
+  [...e.currentTarget.children].forEach(x => x.classList.toggle('on', x === p));
+};
+const durSl = document.getElementById('dur');
+durSl.oninput = () => document.getElementById('durlabel').textContent = durSl.value + 's';
+
+const lerp = (a,b,t) => a + (b-a)*t;
+const easeOut = t => 1 - Math.pow(1-t,3);
+const easeIO = t => t*t*(3-2*t);
+
+function hex(c, a) {
+  const n = parseInt(c.slice(1), 16);
+  return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;
+}
+
+function skyGrad(ctx, w, h, stops) {
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  stops.forEach((c, i) => g.addColorStop(i / (stops.length - 1), c));
+  return g;
+}
+
+// ---- scene renderers (x, y scaled from 1x1 reference) ----
+const KINDS = ['typo', 'horizon', 'orb', 'starfield', 'grid'];
+
+function scHorizon(ctx, w, h, S, loc, cam, rnd) {
+  const skyH = h * 0.62 + cam.y * 40;
+  ctx.fillStyle = skyGrad(ctx, w, skyH, S.sky);
+  ctx.fillRect(0, 0, w, skyH);
+  // sun
+  const r = w * 0.09 * cam.z, cx = w * 0.62 + cam.x * w * 0.05, cy = skyH * 0.78;
+  const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 2.6);
+  halo.addColorStop(0, hex(S.sun, 0.9)); halo.addColorStop(0.4, hex(S.sun, 0.3)); halo.addColorStop(1, hex(S.sun, 0));
+  ctx.fillStyle = halo; ctx.fillRect(0, 0, w, skyH);
+  ctx.fillStyle = S.sun; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+  // ground
+  ctx.fillStyle = S.bg; ctx.fillRect(0, skyH, w, h - skyH);
+  ctx.strokeStyle = hex(S.acc, 0.4);
+  for (let i = 1; i < 22; i++) {
+    const y = skyH + (h - skyH) * Math.pow(i / 22, 1.7);
+    ctx.globalAlpha = 1 - i / 22; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  // skyscrapers
+  for (let i = 0; i < 9; i++) {
+    const bw = w * rnd(0.02, 0.06), bh = h * rnd(0.10, 0.30) * cam.z;
+    const x = w * (i + 0.5) / 9 + cam.x * 40 - bw / 2;
+    ctx.fillStyle = hex(S.bg, 0.96);
+    ctx.fillRect(x, skyH - bh, bw, bh);
+    if (rnd(0,1) > 0.25) {
+      ctx.fillStyle = hex(S.acc, 0.7);
+      for (let k = 0; k < 6; k++) ctx.fillRect(x + rnd(2, bw - 6), skyH - bh + rnd(4, bh - 6), 2, 2);
+    }
+  }
+}
+
+function scOrb(ctx, w, h, S, loc, cam, rnd) {
+  ctx.fillStyle = skyGrad(ctx, w, h, S.sky); ctx.fillRect(0, 0, w, h);
+  const cx = w / 2 + cam.x * w * 0.03, cy = h * 0.46, R = Math.min(w, h) * 0.26 * cam.z;
+  for (const gr of [1.9, 1.4, 1.15]) {
+    const g = ctx.createRadialGradient(cx, cy, R * 0.5, cx, cy, R * gr);
+    g.addColorStop(0, hex(S.acc, 0.28 / gr)); g.addColorStop(1, hex(S.acc, 0));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  }
+  const body = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.3, R * 0.1, cx, cy, R);
+  body.addColorStop(0, S.sun); body.addColorStop(1, S.bg);
+  ctx.fillStyle = body; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.30)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
+  for (const [tilt, col, sp] of [[0, S.acc2, -0.7], [0.5, S.acc, 0.9]]) {
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(0.35 + cam.x * 0.2);
+    ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.globalAlpha = 0.85;
+    ctx.beginPath(); ctx.ellipse(0, 0, R * 1.8, R * 0.5, tilt, loc * sp * 4, loc * sp * 4 + 4.8); ctx.stroke();
+    ctx.restore(); ctx.globalAlpha = 1;
+  }
+}
+
+function scGrid(ctx, w, h, S, loc, cam, rnd) {
+  const skyH = h * 0.42;
+  ctx.fillStyle = skyGrad(ctx, w, skyH, S.sky); ctx.fillRect(0, 0, w, skyH);
+  ctx.fillStyle = S.bg; ctx.fillRect(0, skyH, w, h - skyH);
+  const cx = w / 2;
+  ctx.strokeStyle = hex(S.acc, 0.6); ctx.lineWidth = 2;
+  for (let i = -13; i <= 13; i++) { ctx.beginPath(); ctx.moveTo(cx, skyH); ctx.lineTo(cx + i * w / 8, h); ctx.stroke(); }
+  const speed = (loc * 14 + cam.y * 6) % 1;
+  for (let i = 0; i < 15; i++) {
+    const t = (i / 15 + speed) % 1, y = skyH + (h - skyH) * Math.pow(t, 2.4);
+    ctx.strokeStyle = hex(S.acc2, 0.7 * (1 - t * 0.5));
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  // big sun sliced
+  const r = w * 0.16, sy = skyH * 0.82;
+  const g = ctx.createRadialGradient(cx, sy, 0, cx, sy, r * 1.5);
+  g.addColorStop(0, hex(S.sun, 0.95)); g.addColorStop(1, hex(S.sun, 0.05));
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, sy, r, 0, 7); ctx.fill();
+  ctx.fillStyle = S.sky[0];
+  for (let i = 0; i < 7; i++) ctx.fillRect(cx - r, sy + (i - 1) * r * 0.22, r * 2, r * 0.09);
+}
+
+function scStars(ctx, w, h, S, loc, cam, rnd, st) {
+  ctx.fillStyle = skyGrad(ctx, w, h, S.sky); ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < 5; i++) {
+    const ex = rnd(0, w), ey = rnd(0, h), er = Math.min(w, h) * rnd(0.18, 0.4);
+    const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, er);
+    const col = i % 2 ? S.acc : S.acc2;
+    g.addColorStop(0, hex(col, 0.14)); g.addColorStop(1, hex(col, 0));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  }
+  for (const [x, y, r, dx] of st) {
+    ctx.globalAlpha = 0.5 + 0.5 * dx;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x + cam.x * 40 * dx + dx * loc * 60, y + cam.y * 40 * dx + dx * loc * 24, r, r);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function scTypo(ctx, w, h, S, loc, cam, rnd, txt) {
+  ctx.fillStyle = skyGrad(ctx, w, h, S.sky); ctx.fillRect(0, 0, w, h);
+  ctx.filter = 'blur(18px)'; ctx.drawImage(cv0keep, -40, -40, w + 80, h + 80); ctx.filter = 'none';
+  const reveal = easeOut(Math.min(1, loc * 1.6));
+  let fs = h * 0.16; ctx.font = `700 ${fs}px ${S.title}`;
+  const txt2 = txt.toUpperCase();
+  while (ctx.measureText(txt2).width > w * 0.86 && fs > 20) { fs *= 0.92; ctx.font = `700 ${fs}px ${S.title}`; }
+  const tw = ctx.measureText(txt2).width;
+  const x = (w - tw) / 2 + cam.x * 50;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, w * reveal, h); ctx.clip();
+  ctx.fillStyle = S.acc; ctx.textBaseline = 'middle';
+  ctx.fillText(txt2, x, h / 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.fillText(txt2, x + 3, h / 2);
+  ctx.restore();
+  // flare sweep
+  const sx = lerp(-w * 0.3, w * 1.3, (loc * 1.2) % 1);
+  const g = ctx.createLinearGradient(sx - 120, 0, sx + 120, 0);
+  g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.16)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(sx - 120, 0, 240, h);
+}
+
+let cv0keep = null; // snapshot for typo blur base
+
+// ---- film pass ----
+function filmPass(ctx, w, h, S, rnd) {
+  // vignette
+  const g = ctx.createRadialGradient(w/2, h/2, Math.min(w,h)*0.25, w/2, h/2, Math.max(w,h)*0.75);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(0,0,0,${S.letterbox ? 0.5 : 0.42})`);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  // grain
+  if (S.grain > 0.03) {
+    ctx.globalAlpha = S.grain; ctx.fillStyle = '#fff';
+    for (let i = 0; i < 420; i++) ctx.fillRect(rnd(0, w), rnd(0, h), 1.4, 1.4);
+    ctx.fillStyle = '#000';
+    for (let i = 0; i < 380; i++) ctx.fillRect(rnd(0, w), rnd(0, h), 1.4, 1.4);
+    ctx.globalAlpha = 1;
+  }
+  if (S.letterbox) {
+    const b = h * S.letterbox;
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, b); ctx.fillRect(0, h - b, w, b);
+  }
+}
+
+// ---- main generate ----
+let recording = false;
+function generate() {
+  const promptEl = document.getElementById('prompt');
+  const prompt = promptEl.value.trim() || 'nico gen studio';
+  const D = +durSl.value, FPS = 30;
+  cv.width = fmt[0] > 1300 ? 1280 : fmt[0]; cv.height = Math.round(cv.width * fmt[1] / fmt[0]);
+  pv.style.display = 'none'; cv.style.display = 'block';
+  dl.disabled = true; again.disabled = true; gen.disabled = true; bar.style.width = '0%';
+
+  const S = STYLES[style];
+  const parts = prompt.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+  const shots = parts.map((t, i) => ({ t, kind: KINDS[i % KINDS.length], dur: Math.max(2.5, D / parts.length), move: ['push','drift','orbit'][i % 3] }));
+  const total = shots.reduce((a, s) => a + s.dur, 0);
+  const seed = Math.floor(Math.random() * 1e9);
+  let si = 0;
+  const srnd = (a, b) => { const x = Math.sin(seed + si * 77 + a * 12.9898 + b * 78.233) * 43758.5453; return x - Math.floor(x); };
+  // precomputed starfield
+  const st = []; for (let i = 0; i < 260; i++) st.push([srnd(i,1) * cv.width, srnd(i,2) * cv.height * 0.85, srnd(i,3) > 0.85 ? 2.4 : 1.3, srnd(i,4)]);
+
+  // audio: ambient pad
+  let ac = null, anode = null;
+  let stream = cv.captureStream(FPS);
+  try {
+    ac = new AudioContext();
+    const dst = ac.createMediaStreamDestination();
+    const o1 = ac.createOscillator(), o2 = ac.createOscillator(), o3 = ac.createOscillator();
+    o1.frequency.value = 110; o2.frequency.value = 165; o3.frequency.value = 220.5;
+    o1.type = o2.type = 'sine'; o3.type = 'triangle';
+    const g = ac.createGain(); g.gain.value = document.getElementById('music').checked ? 0.06 : 0.0001;
+    const lfo = ac.createOscillator(); lfo.frequency.value = 0.25;
+    const lg = ac.createGain(); lg.gain.value = 0.02;
+    lfo.connect(lg); lg.connect(g.gain);
+    o1.connect(g); o2.connect(g); o3.connect(g); g.connect(dst);
+    o1.start(); o2.start(); o3.start(); lfo.start();
+    dst.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+    anode = ac;
+  } catch (e) { /* silent fallback */ }
+
+  const mime = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm';
+  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6_000_000 });
+  const chunks = [];
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = () => {
+    const blob = new Blob(chunks, { type: mime });
+    pv.src = URL.createObjectURL(blob); pv.style.display = 'block'; cv.style.display = 'none';
+    dl.disabled = false;
+    dl.onclick = () => {
+      const a = document.createElement('a');
+      a.href = pv.src; a.download = 'nico-gen-' + Date.now() + (mime === 'video/mp4' ? '.mp4' : '.webm'); a.click();
+    };
+    again.disabled = false; gen.disabled = false;
+    anode && anode.close();
+  };
+  rec.start(200);
+  recording = true;
+  const t0 = performance.now();
+
+  function frame(now) {
+    const t = (now - t0) / 1000;
+    if (!recording || t >= total) {
+      recording = false; rec.stop(); bar.style.width = '100%'; return;
+    }
+    bar.style.width = (t / total * 100).toFixed(1) + '%';
+    // find shot
+    let acc = 0, s = shots[shots.length - 1], loc = 1;
+    for (let i = 0; i < shots.length; i++) {
+      if (t < acc + shots[i].dur) { s = shots[i]; loc = (t - acc) / s.dur; si = i; break; }
+      acc += shots[i].dur;
+    }
+    const mv = s.move;
+    const cam = { z: mv === 'push' ? lerp(1, 1.28, easeIO(loc)) : 1,
+                  x: Math.sin(loc * Math.PI) * (mv === 'orbit' || mv === 'drift' ? 1 : 0.4),
+                  y: easeIO(loc) * (mv === 'drift' ? 0.3 : 0) };
+    const w = cv.width, h = cv.height;
+    ctx.save();
+    if (cam.z !== 1) { ctx.translate(w/2, h/2); ctx.scale(cam.z, cam.z); ctx.translate(-w/2, -h/2); }
+    switch (s.kind) {
+      case 'horizon': scHorizon(ctx, w, h, S, loc, cam, srnd); break;
+      case 'orb': scOrb(ctx, w, h, S, loc, cam, srnd); break;
+      case 'grid': scGrid(ctx, w, h, S, loc, cam, srnd); break;
+      case 'starfield': scStars(ctx, w, h, S, loc, cam, srnd, st); break;
+      case 'typo': scTypo(ctx, w, h, S, loc, cam, srnd, parts[0]); break;
+    }
+    ctx.restore();
+    // progress line + watermark
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(w*0.29, h*0.945); ctx.lineTo(w*0.71, h*0.945); ctx.stroke();
+    ctx.strokeStyle = S.acc; ctx.beginPath();
+    ctx.moveTo(w*0.29, h*0.945); ctx.lineTo(w*0.29 + w*0.42*(t/total), h*0.945); ctx.stroke();
+    ctx.font = `600 ${Math.round(h*0.022)}px system-ui`; ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillText('NICO GEN STUDIO', w - h*0.03, h*0.055);
+    ctx.textAlign = 'left';
+    filmPass(ctx, w, h, S, srnd);
+    if (s.kind === 'typo') { cv0keep = cv; }
+    // crossfade flashes between scenes
+    const into = t - acc; // local time
+    if (into < 0.18 && si > 0) { ctx.fillStyle = `rgba(0,0,0,${1 - into/0.18})`; ctx.fillRect(0,0,w,h); }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+gen.onclick = generate;
+again.onclick = () => { recording = false; setTimeout(generate, 50); };
+})();
+</script>
+</body>
+</html>
