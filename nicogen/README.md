@@ -15,3 +15,22 @@ Requirements: Python 3, Pillow, imageio-ffmpeg (cross-platform).
 
 ## Zero-API delivery design
 Uses the same transport-verified delivery pipeline as all shipped videos: verify status 200, content-type, byte count, and the MP4 ftyp header before a link is ever handed out.
+
+## MCP server (mcp_server.py)
+
+Exposes the engine as MCP tools over stdio: generate_video, list_styles, verify_export.
+
+Connect in Claude Desktop (Developer settings, Edit Config, claude_desktop_config.json):
+
+```json
+{
+  "mcpServers": {
+    "nico-gen-studio": {
+      "command": "python3",
+      "args": ["PATH/TO/nicogen/mcp_server.py"]
+    }
+  }
+}
+```
+
+Then any chat can ask: generate a video with the Nico Gen Studio tool. Rendering is 100% local, no APIs. The verify_export tool enforces the delivery rule: status, content-type, byte count, and MP4 header checked before any link is trusted.
