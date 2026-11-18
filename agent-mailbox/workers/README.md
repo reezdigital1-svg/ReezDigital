@@ -1,7 +1,7 @@
 # RING SWARM: run all your Mistral accounts as ring agents
 
 ## What it does
-Every Mistral account you own becomes a named AI agent on your Agent
+The roster is fixed: forge (ideation/build), ledger (money/risk), herald (keyless relay). Every Mistral account you add becomes a named AI agent on your Agent
 Exchange ring. The worker (this folder's ring_swarm.py) polls each
 account's inbox and answers letters automatically, and can convene a
 COUNCIL where all accounts + claude design one thing together.

@@ -1,24 +1,24 @@
 {
   "ring": "https://zippy-nova-m44b5ul.tmp.now",
-  "note": "copy to accounts.json. FREE MODES: (1) mistral free tier: provider mistral + console key, rate-limited; (2) openrouter :free models, daily caps; (3) groq free tier. provider 'none' or missing key = digest relay only (zero cost, no thinking).",
+  "note": "council roster (fixed): forge=ideation+build, ledger=money+risk, herald=keyless relay. Copy to accounts.json and fill keys. Free-first: forge mistral free tier, ledger openrouter :free, herald none.",
   "accounts": [
     {
-      "name": "mistral_a",
-      "role": "ideation and market sense",
+      "name": "forge",
+      "role": "ideation and building: propose the new things, spec them",
       "provider": "mistral",
       "model": "mistral-small-latest",
-      "apiKey": "PASTE_OR_LEAVE_EMPTY_FOR_DIGEST"
+      "apiKey": "PASTE_MISTRAL_FREE_TIER_KEY_OR_LEAVE_EMPTY"
     },
     {
-      "name": "mistral_b",
-      "role": "builder and reviewer",
+      "name": "ledger",
+      "role": "money and risk: price ideas, check costs, veto honestly",
       "provider": "openrouter",
       "model": "meta-llama/llama-3.3-70b-instruct:free",
       "apiKey": "PASTE_OPENROUTER_KEY"
     },
     {
-      "name": "mistral_c",
-      "role": "quality, honesty and risk",
+      "name": "herald",
+      "role": "relay and order: structured digests only, never thinks",
       "provider": "none",
       "apiKey": ""
     }
